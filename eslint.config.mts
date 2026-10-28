@@ -13,6 +13,13 @@ export default defineConfig(
 		'package.json',
 		'package-lock.json',
 		'tsconfig.json',
+		'.test-build',
+		'release-v1.0.0',
+		'release-v1.1.0',
+		'release-*/**',
+		'scratch/**',
+		'*backup*/**',
+		'.backup*/**',
 	]),
 	{
 		languageOptions: {
@@ -29,4 +36,11 @@ export default defineConfig(
 		},
 	},
 	...obsidianmd.configs.recommended,
+	{
+		files: ['tests/**/*.ts'],
+		rules: {
+			'obsidianmd/no-nodejs-modules': 'off',
+			'@typescript-eslint/no-floating-promises': 'off',
+		},
+	},
 );

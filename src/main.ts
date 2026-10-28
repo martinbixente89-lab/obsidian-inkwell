@@ -1,114 +1,92 @@
+import { Plugin } from 'obsidian';
+import { registerCommands } from './commands';
 import {
-	Editor,
-	MarkdownView,
-	MarkdownFileInfo,
-	Modal,
-	Notice,
-	Plugin,
-} from 'obsidian';
+	EmbedSelectionTracker,
+	registerEmbedSelectionTracking,
+} from './editor/embed-selection';
+import { registerLivePreviewExtension } from './editor/live-preview-extension';
+import { TagNavigationManager } from './editor/tag-navigation/manager';
 import {
-	DEFAULT_SETTINGS,
-	MyPluginSettings,
-	SampleSettingTab,
+	InkwellSettings,
+	InkwellSettingTab,
+	sanitizeSettings,
 } from './settings';
+import { FloatingToolbarManager } from './ui/floating-toolbar';
+import { EditStyledTextPopover } from './ui/edit-styled-text-popover';
+import { isLightBackground } from './format/color-spans';
+import { loadAllCustomFonts } from './fonts/font-manager';
 
-// Remember to rename these classes and interfaces!
+export default class InkwellPlugin extends Plugin {
+	settings!: InkwellSettings;
+	tracker!: EmbedSelectionTracker;
+	toolbarManager!: FloatingToolbarManager;
+	editPopover!: EditStyledTextPopover;
+	tagNavigation!: TagNavigationManager;
 
-export default class MyPlugin extends Plugin {
-	settings!: MyPluginSettings;
-
-	async onload() {
+	async onload(): Promise<void> {
 		await this.loadSettings();
+		this.addSettingTab(new InkwellSettingTab(this.app, this));
 
-		// This creates an icon in the left ribbon.
-		this.addRibbonIcon('dice', 'Sample', (_evt: MouseEvent) => {
-			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
-		});
+		await loadAllCustomFonts(this.app.vault, this.settings.customFonts, undefined, this.app);
+		this.registerEvent(
+			this.app.workspace.on('window-open', (win) => {
+				void loadAllCustomFonts(
+					this.app.vault,
+					this.settings.customFonts,
+					win.win.document,
+					this.app,
+				);
+			}),
+		);
 
-		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
-		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status bar text');
-
-		// This adds a simple command that can be triggered anywhere
-		this.addCommand({
-			id: 'open-modal-simple',
-			name: 'Open modal (simple)',
-			callback: () => {
-				new SampleModal(this.app).open();
-			},
-		});
-		// This adds an editor command that can perform some operation on the current editor instance
-		this.addCommand({
-			id: 'replace-selected',
-			name: 'Replace selected content',
-			editorCallback: (
-				editor: Editor,
-				_ctx: MarkdownView | MarkdownFileInfo,
-			) => {
-				editor.replaceSelection('Sample editor command');
-			},
-		});
-		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'open-modal-complex',
-			name: 'Open modal (complex)',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView =
-					this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new SampleModal(this.app).open();
+		registerLivePreviewExtension(this);
+		this.registerMarkdownPostProcessor((el) => {
+			const spans = el.querySelectorAll('span[data-inkwell], span[style*="background-color"]');
+			spans.forEach((span) => {
+				if (span instanceof HTMLElement) {
+					const bg = span.style.backgroundColor;
+					const color = span.style.color;
+					if (bg && isLightBackground(bg) && !color) {
+						span.classList.add('inkwell-highlight-light');
+					} else {
+						span.classList.remove('inkwell-highlight-light');
 					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
 				}
-				return false;
-			},
+			});
 		});
-
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(activeDocument, 'click', (_evt: MouseEvent) => {
-			new Notice('Click');
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(
-			window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000),
+		this.tagNavigation = new TagNavigationManager(this);
+		this.tagNavigation.setEnabled(
+			this.settings.experimentalTagNavigation,
+			this.settings.experimentalColorBoldSupport,
 		);
+		this.editPopover = new EditStyledTextPopover(this);
+		this.tracker = registerEmbedSelectionTracking(this);
+		registerCommands(this, this.tracker);
+
+		this.toolbarManager = new FloatingToolbarManager(this, this.tracker);
 	}
 
-	onunload() {}
-
-	async loadSettings() {
-		this.settings = Object.assign(
-			{},
-			DEFAULT_SETTINGS,
-			(await this.loadData()) as Partial<MyPluginSettings>,
-		);
+	onunload(): void {
+		this.editPopover?.close(false);
+		this.toolbarManager?.destroy();
 	}
 
-	async saveSettings() {
+	async loadSettings(): Promise<void> {
+		this.settings = sanitizeSettings(await this.loadData());
+	}
+
+	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
 	}
-}
 
-class SampleModal extends Modal {
-	onOpen() {
-		const { contentEl } = this;
-		contentEl.setText('Woah!');
+	onToolbarSettingChanged(): void {
+		this.toolbarManager?.onSettingChanged();
 	}
 
-	onClose() {
-		const { contentEl } = this;
-		contentEl.empty();
+	onTagNavigationSettingChanged(): void {
+		this.tagNavigation?.setEnabled(
+			this.settings.experimentalTagNavigation,
+			this.settings.experimentalColorBoldSupport,
+		);
 	}
 }
