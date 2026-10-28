@@ -35,7 +35,7 @@ scratch/
 *.log
 
 # Personal fonts
-fonts/
+/fonts/
 *.otf
 *.ttf
 *.woff

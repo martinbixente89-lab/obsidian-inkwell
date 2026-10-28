@@ -4,6 +4,19 @@ Toutes les modifications notables apportées au plugin **Inkwell** sont consign�
 
 Le format s’appuie sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/) et respecte les règles de [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.5.1] - 2026-10-28
+
+### Version 1.5.1 — Correctif : Rétablissement des sources TypeScript de gestion des polices
+
+Cette version corrective résout une exclusion involontaire dans le fichier `.gitignore` qui masquait les sources TypeScript du module de polices lors de la compilation publique.
+
+### Corrections
+- **Rétablissement des sources TypeScript `src/fonts/`** :
+  - Ajustement de la règle d'exclusion des polices du coffre dans `.gitignore` (`/fonts/`) pour ne cibler que les dossiers de polices du coffre et inclure les fichiers TypeScript `font-manager.ts` et `types.ts` dans le dépôt public.
+  - Résolution complète des avertissements de typage TypeScript (`@typescript-eslint/no-unsafe-*`) liés à l'absence de ce module sur le dépôt distant.
+
+---
+
 ## [1.5.0] - 2026-10-28
 
 ### Version 1.5.0 — Format HTML unifié en ligne & Barre d’outils compacte à 4 groupes

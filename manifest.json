@@ -1,7 +1,7 @@
 {
 	"id": "inkwell",
 	"name": "Inkwell",
-	"version": "1.5.0",
+	"version": "1.5.1",
 	"minAppVersion": "1.4.4",
 	"description": "Color, highlight, size and style font families for selected text with inline HTML spans.",
 	"author": "westkronos147",
