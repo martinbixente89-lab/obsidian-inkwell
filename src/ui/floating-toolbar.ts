@@ -508,7 +508,37 @@ export class FloatingToolbarManager {
 			}
 		}
 
-		// Fallback to CodeMirror coordsAtPos when window DOM selection is blurred
+		// Fallback to sub-editor or root CodeMirror coordsAtPos when window DOM selection is blurred or programmatic
+		if (!selRect) {
+			const activeHost = activeWindow.document.activeElement?.closest(
+				'.inkwell-col-editor-host, .inkwell-visual-callout-editor-host',
+			) as (HTMLElement & {
+				cmViewRef?: {
+					state: { selection: { main: { from: number; to: number; empty: boolean } } };
+					coordsAtPos: (pos: number) => { top: number; bottom: number; left: number; right: number } | null;
+				};
+			}) | null;
+			const subCm = activeHost?.cmViewRef;
+			if (subCm && !subCm.state.selection.main.empty) {
+				const p1 = subCm.coordsAtPos(subCm.state.selection.main.from);
+				const p2 = subCm.coordsAtPos(subCm.state.selection.main.to);
+				if (p1 && p2) {
+					const top = Math.min(p1.top, p2.top);
+					const bottom = Math.max(p1.bottom, p2.bottom);
+					const left = Math.min(p1.left, p2.left);
+					const right = Math.max(p1.right, p2.right);
+					selRect = {
+						top,
+						bottom,
+						left,
+						right,
+						width: Math.max(0, right - left),
+						height: Math.max(0, bottom - top),
+					};
+				}
+			}
+		}
+
 		if (!selRect && this.capturedSelection) {
 			const cm = (this.currentEditor as Editor & {
 				cm?: {

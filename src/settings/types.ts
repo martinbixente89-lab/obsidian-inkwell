@@ -18,6 +18,7 @@ export interface InkwellSettings {
 	toolbarEnabled: boolean;
 	experimentalTagNavigation: boolean;
 	experimentalColorBoldSupport: boolean;
+	slashMenuEnabled: boolean;
 
 	// V1.1.0 — Palettes personnalisées
 	palettes: CustomPalette[];
@@ -30,6 +31,15 @@ export interface InkwellSettings {
 
 	// V1.2.0 — Polices personnelles
 	customFonts: CustomFontItem[];
+
+	// Prototype colonnes : 'notion' (Page sobre + blocs), 'widget' (Prototype A), ou 'callout' (Prototype B)
+	columnPrototypeMode: 'notion' | 'callout' | 'widget';
+
+	// Largeur de page pour les vues Markdown : 'standard' (respecte la longueur de ligne d'Obsidian) ou 'full' (pleine largeur avec marges confortables)
+	pageWidthMode: 'standard' | 'full';
+
+	// État des titres dépliants (H1-H3) par note : conserve de vrais titres Markdown '#' tout en mémorisant le caractère dépliant et l'état replié/déplié
+	headingFoldStates?: Record<string, { isToggle?: boolean; collapsed?: boolean }>;
 }
 
 export const DEFAULT_SETTINGS: InkwellSettings = {
@@ -38,6 +48,7 @@ export const DEFAULT_SETTINGS: InkwellSettings = {
 	toolbarEnabled: true,
 	experimentalTagNavigation: true,
 	experimentalColorBoldSupport: true,
+	slashMenuEnabled: true,
 
 	palettes: createDefaultPalettes(),
 	recentColors: [],
@@ -48,6 +59,9 @@ export const DEFAULT_SETTINGS: InkwellSettings = {
 	activeHighlightPaletteId: BUILTIN_HIGHLIGHT_PALETTE_ID,
 
 	customFonts: [],
+	columnPrototypeMode: 'notion',
+	pageWidthMode: 'full',
+	headingFoldStates: {},
 };
 
 /**
@@ -79,6 +93,10 @@ export function sanitizeSettings(loaded: unknown): InkwellSettings {
 		typeof data.experimentalColorBoldSupport === 'boolean'
 			? data.experimentalColorBoldSupport
 			: DEFAULT_SETTINGS.experimentalColorBoldSupport;
+	const rawSlash =
+		typeof data.slashMenuEnabled === 'boolean'
+			? data.slashMenuEnabled
+			: DEFAULT_SETTINGS.slashMenuEnabled;
 
 	// Palettes sanitization
 	let palettes: CustomPalette[] = DEFAULT_SETTINGS.palettes;
@@ -185,12 +203,38 @@ export function sanitizeSettings(loaded: unknown): InkwellSettings {
 		}) as CustomFontItem[];
 	}
 
+	const rawMode =
+		data.columnPrototypeMode === 'notion' ||
+		data.columnPrototypeMode === 'widget' ||
+		data.columnPrototypeMode === 'callout'
+			? data.columnPrototypeMode
+			: DEFAULT_SETTINGS.columnPrototypeMode;
+
+	const rawPageWidth =
+		data.pageWidthMode === 'standard' || data.pageWidthMode === 'full'
+			? data.pageWidthMode
+			: DEFAULT_SETTINGS.pageWidthMode;
+
+	const rawHeadingFoldStates: Record<string, { isToggle?: boolean; collapsed?: boolean }> = {};
+	if (data.headingFoldStates && typeof data.headingFoldStates === 'object') {
+		for (const [k, v] of Object.entries(data.headingFoldStates as Record<string, unknown>)) {
+			if (v && typeof v === 'object') {
+				const rec = v as Record<string, unknown>;
+				rawHeadingFoldStates[k] = {
+					isToggle: Boolean(rec.isToggle),
+					collapsed: Boolean(rec.collapsed),
+				};
+			}
+		}
+	}
+
 	return {
 		defaultColor,
 		defaultHighlightColor,
 		toolbarEnabled: rawToolbar,
 		experimentalTagNavigation: rawNav,
 		experimentalColorBoldSupport: rawBold,
+		slashMenuEnabled: rawSlash,
 		palettes,
 		recentColors,
 		recentHighlights,
@@ -199,5 +243,8 @@ export function sanitizeSettings(loaded: unknown): InkwellSettings {
 		activeTextPaletteId,
 		activeHighlightPaletteId,
 		customFonts,
+		columnPrototypeMode: rawMode,
+		pageWidthMode: rawPageWidth,
+		headingFoldStates: rawHeadingFoldStates,
 	};
 }

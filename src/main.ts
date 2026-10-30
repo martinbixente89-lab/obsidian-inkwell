@@ -15,6 +15,13 @@ import { FloatingToolbarManager } from './ui/floating-toolbar';
 import { EditStyledTextPopover } from './ui/edit-styled-text-popover';
 import { isLightBackground } from './format/color-spans';
 import { loadAllCustomFonts } from './fonts/font-manager';
+import { createSlashMenuExtension } from './slash-menu/extension';
+import { createVisualColumnsExtension } from './columns/extension';
+import { createColumnKeymapExtension } from './columns/callout-keymap';
+import { CalloutColumnResizer } from './columns/callout-resizer';
+import { createRootVisualMarkdownExtension } from './columns/column-markdown-deco';
+import { createVisualCalloutsExtension } from './blocks/callout-widget';
+import { createBlockGutterExtension } from './blocks/block-gutter-ext';
 
 export default class InkwellPlugin extends Plugin {
 	settings!: InkwellSettings;
@@ -22,6 +29,7 @@ export default class InkwellPlugin extends Plugin {
 	toolbarManager!: FloatingToolbarManager;
 	editPopover!: EditStyledTextPopover;
 	tagNavigation!: TagNavigationManager;
+	calloutResizer!: CalloutColumnResizer;
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
@@ -40,6 +48,7 @@ export default class InkwellPlugin extends Plugin {
 		);
 
 		registerLivePreviewExtension(this);
+		this.calloutResizer = new CalloutColumnResizer(this.app);
 		this.registerMarkdownPostProcessor((el) => {
 			const spans = el.querySelectorAll('span[data-inkwell], span[style*="background-color"]');
 			spans.forEach((span) => {
@@ -53,7 +62,14 @@ export default class InkwellPlugin extends Plugin {
 					}
 				}
 			});
+
+			this.calloutResizer.attachResizers(el);
 		});
+		this.registerEvent(
+			this.app.workspace.on('layout-change', () => {
+				this.calloutResizer.attachResizers(document.body);
+			}),
+		);
 		this.tagNavigation = new TagNavigationManager(this);
 		this.tagNavigation.setEnabled(
 			this.settings.experimentalTagNavigation,
@@ -64,11 +80,41 @@ export default class InkwellPlugin extends Plugin {
 		registerCommands(this, this.tracker);
 
 		this.toolbarManager = new FloatingToolbarManager(this, this.tracker);
+		this.registerEditorExtension(createSlashMenuExtension(this));
+
+		// Register comparative prototype extensions ('notion', 'widget', 'callout')
+		this.registerEditorExtension(createColumnKeymapExtension());
+		this.registerEditorExtension(createVisualColumnsExtension(this));
+		this.registerEditorExtension(createVisualCalloutsExtension(this));
+		this.registerEditorExtension(createRootVisualMarkdownExtension(this));
+		this.registerEditorExtension(createBlockGutterExtension(this));
+		this.updateColumnPrototypeBodyClass();
 	}
 
 	onunload(): void {
+		document.body.classList.remove('inkwell-proto-widget-active');
+		document.body.classList.remove('inkwell-proto-notion-active');
+		document.body.classList.remove('inkwell-page-full-width');
 		this.editPopover?.close(false);
 		this.toolbarManager?.destroy();
+	}
+
+	updateColumnPrototypeBodyClass(): void {
+		const mode = this.settings.columnPrototypeMode;
+		document.body.classList.toggle(
+			'inkwell-proto-widget-active',
+			mode === 'widget' || mode === 'notion',
+		);
+		document.body.classList.toggle('inkwell-proto-notion-active', mode === 'notion');
+		document.body.classList.toggle(
+			'inkwell-page-full-width',
+			this.settings.pageWidthMode === 'full',
+		);
+		document.querySelectorAll('.inkwell-visual-columns-root').forEach((el) => {
+			el.classList.toggle('is-notion-mode', mode === 'notion');
+		});
+		this.app.workspace.updateOptions();
+		window.dispatchEvent(new Event('resize'));
 	}
 
 	async loadSettings(): Promise<void> {

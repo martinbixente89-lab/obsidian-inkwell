@@ -84,6 +84,40 @@ export class InkwellSettingTab extends PluginSettingTab {
 					});
 			});
 
+		// 3b. Slash Menu Toggle
+		new Setting(containerEl)
+			.setName('Menu d’insertion slash (/)')
+			.setDesc(
+				'Ouvre un menu flottant d’insertion rapide lorsque vous tapez / au début d’une ligne vide. Pour éviter des menus simultanés, vous pouvez désactiver le plugin interne « Commandes / » d’Obsidian.',
+			)
+			.addToggle((toggle) => {
+				toggle
+					.setValue(this.plugin.settings.slashMenuEnabled)
+					.onChange(async (value) => {
+						this.plugin.settings.slashMenuEnabled = value;
+						await this.plugin.saveSettings();
+					});
+			});
+
+		// 3c. Page Width Mode (Standard vs Full Width)
+		new Setting(containerEl)
+			.setName('Largeur de page')
+			.setDesc(
+				'Définit la largeur d’écriture dans les panneaux de notes Markdown sans modifier la configuration globale du coffre. Le mode « Pleine largeur » utilise toute la largeur disponible avec des marges confortables pour les poignées de blocs.',
+			)
+			.addDropdown((dropdown) => {
+				dropdown
+					.addOption('full', 'Pleine largeur (marges confortables)')
+					.addOption('standard', 'Standard (longueur de ligne d’Obsidian)')
+					.setValue(this.plugin.settings.pageWidthMode)
+					.onChange(async (value) => {
+						this.plugin.settings.pageWidthMode =
+							value === 'standard' ? 'standard' : 'full';
+						await this.plugin.saveSettings();
+						this.plugin.updateColumnPrototypeBodyClass();
+					});
+			});
+
 		// 4. Tag Navigation & Hiding
 		new Setting(containerEl)
 			.setName('Navigation et masquage des balises')

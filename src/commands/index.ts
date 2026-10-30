@@ -277,4 +277,15 @@ export function registerCommands(
 				plugin.app.workspace.getActiveFile()?.path ?? null,
 			),
 	});
+
+	plugin.addCommand({
+		id: 'toggle-page-width',
+		name: 'Basculer la largeur de page (standard / pleine largeur)',
+		callback: async () => {
+			plugin.settings.pageWidthMode =
+				plugin.settings.pageWidthMode === 'full' ? 'standard' : 'full';
+			await plugin.saveSettings();
+			plugin.updateColumnPrototypeBodyClass();
+		},
+	});
 }

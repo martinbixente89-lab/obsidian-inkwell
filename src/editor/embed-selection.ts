@@ -72,6 +72,14 @@ export class EmbedSelectionTracker {
 		// Focus left the editor (e.g. command palette input): keep the capture.
 		if (!content?.instanceOf(HTMLElement)) return;
 
+		// Selections inside a visual column or visual callout editor are tracked via setExternalWidgetSelection.
+		if (
+			startEl?.closest('.inkwell-col-editor-host, .inkwell-visual-callout-editor-host') ||
+			endEl?.closest('.inkwell-col-editor-host, .inkwell-visual-callout-editor-host')
+		) {
+			return;
+		}
+
 		const inEmbed =
 			!!startEl?.closest(HTML_EMBED_SELECTOR) || !!endEl?.closest(HTML_EMBED_SELECTOR);
 		const view = EditorView.findFromDOM(content);
@@ -95,6 +103,28 @@ export class EmbedSelectionTracker {
 			from,
 			to,
 		};
+	}
+
+	/**
+	 * Records a mapped selection from an embedded column EditorView against the parent view.
+	 */
+	setExternalWidgetSelection(view: EditorView, from: number, to: number): void {
+		const main = view.state.selection.main;
+		this.captured = {
+			view,
+			doc: view.state.doc,
+			editorFrom: main.from,
+			editorTo: main.to,
+			from: Math.min(from, to),
+			to: Math.max(from, to),
+		};
+	}
+
+	/**
+	 * Clears any remembered widget selection.
+	 */
+	clearExternalWidgetSelection(): void {
+		this.captured = null;
 	}
 
 	/**

@@ -1325,8 +1325,1693 @@ body .modal.inkwell-custom-color-modal .setting-item {
 	color: var(--text-normal);
 }
 
+/* ==========================================================================
+   Slash Insertion Menu (/)
+   ========================================================================== */
 
+.inkwell-slash-placeholder {
+	color: var(--text-faint);
+	font-style: normal;
+	pointer-events: none;
+	user-select: none;
+	opacity: 0.6;
+	padding-left: 2px;
+}
 
+.inkwell-slash-menu {
+	position: fixed;
+	z-index: 1000;
+	width: 290px;
+	max-width: 90vw;
+	background-color: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.2);
+	display: none;
+	flex-direction: column;
+	overflow: hidden;
+	font-family: var(--font-ui);
+	font-size: var(--font-ui-smaller, 13px);
+	color: var(--text-normal);
+}
+
+.inkwell-slash-menu.is-open {
+	display: flex;
+}
+
+.inkwell-slash-scroll-area {
+	max-height: 310px;
+	overflow-y: auto;
+	padding: 6px;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.inkwell-slash-scroll-area::-webkit-scrollbar {
+	width: 6px;
+}
+
+.inkwell-slash-scroll-area::-webkit-scrollbar-thumb {
+	background-color: var(--background-modifier-border);
+	border-radius: 3px;
+}
+
+.inkwell-slash-section-header {
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--text-muted);
+	padding: 8px 8px 4px 8px;
+	user-select: none;
+	letter-spacing: 0.02em;
+}
+
+.inkwell-slash-divider {
+	height: 1px;
+	background-color: var(--background-modifier-border);
+	margin: 4px 8px;
+}
+
+.inkwell-slash-item {
+	display: flex;
+	align-items: center;
+	padding: 6px 10px;
+	border-radius: 6px;
+	cursor: pointer;
+	user-select: none;
+	transition: background-color 0.1s ease;
+}
+
+.inkwell-slash-item:hover,
+.inkwell-slash-item.is-selected {
+	background-color: var(--background-modifier-hover);
+}
+
+.theme-dark .inkwell-slash-item.is-selected {
+	background-color: rgba(255, 255, 255, 0.09);
+}
+
+.theme-light .inkwell-slash-item.is-selected {
+	background-color: rgba(0, 0, 0, 0.06);
+}
+
+.inkwell-slash-icon {
+	width: 18px;
+	height: 18px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	margin-right: 10px;
+	color: var(--text-muted);
+	flex-shrink: 0;
+}
+
+.inkwell-slash-icon svg {
+	width: 16px;
+	height: 16px;
+}
+
+.inkwell-slash-item.is-selected .inkwell-slash-icon {
+	color: var(--text-normal);
+}
+
+.inkwell-slash-label {
+	flex: 1;
+	font-size: 13px;
+	color: var(--text-normal);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.inkwell-slash-syntax {
+	font-family: var(--font-monospace);
+	font-size: 11px;
+	color: var(--text-faint);
+	margin-left: 10px;
+	flex-shrink: 0;
+}
+
+.inkwell-slash-empty {
+	padding: 16px;
+	text-align: center;
+	color: var(--text-muted);
+	font-size: 13px;
+}
+
+.inkwell-slash-footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 7px 12px;
+	border-top: 1px solid var(--background-modifier-border);
+	background-color: var(--background-secondary);
+	color: var(--text-muted);
+	font-size: 12px;
+	user-select: none;
+	cursor: pointer;
+}
+
+.inkwell-slash-footer:hover {
+	color: var(--text-normal);
+}
+
+.inkwell-slash-footer-kbd {
+	font-size: 11px;
+	color: var(--text-faint);
+	font-family: var(--font-ui);
+	background: transparent;
+	border: none;
+	padding: 0;
+	letter-spacing: 0.02em;
+}
+
+/* Page creation & conflict modal */
+.inkwell-page-modal-desc {
+	margin-bottom: 12px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller, 13px);
+}
+
+.inkwell-page-conflict-warning {
+	margin-bottom: 14px;
+	padding: 10px 12px;
+	background-color: rgba(235, 87, 87, 0.1);
+	border-left: 3px solid var(--text-error, #e03131);
+	border-radius: 4px;
+	color: var(--text-normal);
+	font-size: 13px;
+}
+
+/* ==========================================================================
+   Multi-Column Layout (2-5 Columns)
+   ========================================================================== */
+
+.inkwell-columns,
+.callout[data-callout="multi-column"] > .callout-content,
+.callout[data-callout="columns"] > .callout-content {
+	display: flex !important;
+	flex-direction: row !important;
+	gap: 1.5rem !important;
+	width: 100% !important;
+	align-items: stretch !important;
+	padding: 0 !important;
+}
+
+.inkwell-column,
+.callout[data-callout="column"],
+.callout[data-callout="col"] {
+	flex: 1 1 0px;
+	min-width: 0 !important;
+	background: transparent !important;
+	border: none !important;
+	padding: 0 !important;
+	margin: 0 !important;
+	box-shadow: none !important;
+}
+
+.callout[data-callout="multi-column"],
+.callout[data-callout="columns"] {
+	background: transparent !important;
+	border: none !important;
+	padding: 0 !important;
+	margin: 1.2rem 0 !important;
+	box-shadow: none !important;
+}
+
+.callout[data-callout="multi-column"] > .callout-title,
+.callout[data-callout="columns"] > .callout-title,
+.callout[data-callout="column"] > .callout-title,
+.callout[data-callout="col"] > .callout-title {
+	display: none !important;
+}
+
+.callout[data-callout="column"] > .callout-content,
+.callout[data-callout="col"] > .callout-content {
+	padding: 0 !important;
+}
+
+@media (max-width: 480px) {
+	.inkwell-columns,
+	.callout[data-callout="multi-column"] > .callout-content,
+	.callout[data-callout="columns"] > .callout-content {
+		flex-direction: column !important;
+		gap: 1rem !important;
+	}
+}
+
+/* ==========================================================================
+   Visual Multi-Column Editor Prototype (Prototype A: Per-Column CodeMirror 6)
+   ========================================================================== */
+
+body.inkwell-proto-widget-active .cm-embed-block.cm-callout:has(.callout[data-callout="multi-column"]),
+body.inkwell-proto-widget-active .cm-embed-block.cm-callout:has(.callout[data-callout="columns"]) {
+	display: none !important;
+}
+
+.inkwell-visual-columns-root {
+	margin: 1.25rem 0;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m, 8px);
+	background-color: var(--background-primary);
+	overflow: hidden;
+	user-select: text;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.inkwell-col-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 5px 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	background-color: var(--background-secondary);
+}
+
+.inkwell-col-ratio-badge {
+	font-size: 11px;
+	font-family: var(--font-monospace);
+	color: var(--text-muted);
+	background-color: var(--background-modifier-border);
+	padding: 2px 8px;
+	border-radius: 10px;
+}
+
+.inkwell-col-header-actions {
+	display: flex;
+	gap: 6px;
+}
+
+.inkwell-col-btn {
+	font-size: 11px;
+	padding: 3px 8px;
+	border-radius: 4px;
+	border: 1px solid var(--background-modifier-border);
+	background-color: var(--background-primary);
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.inkwell-col-btn:hover {
+	color: var(--text-normal);
+	background-color: var(--background-modifier-hover);
+}
+
+.inkwell-col-container {
+	display: flex;
+	flex-direction: row;
+	position: relative;
+	min-height: 110px;
+	background-color: var(--background-primary);
+	align-items: stretch;
+}
+
+.inkwell-col-pane {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	padding: 12px 14px 8px 14px;
+	min-width: 0;
+	box-sizing: border-box;
+	cursor: text;
+	transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.inkwell-col-pane:not(:last-child) {
+	border-right: 1px solid var(--background-modifier-border);
+}
+
+.inkwell-col-pane:focus-within {
+	background-color: var(--background-primary-alt, var(--background-primary));
+	box-shadow: inset 0 0 0 1px var(--interactive-accent);
+}
+
+.inkwell-col-editor-host {
+	flex: 1 1 auto;
+	min-height: 64px;
+}
+
+.inkwell-col-editor-host .cm-editor {
+	background: transparent !important;
+	border: none !important;
+	outline: none !important;
+}
+
+.inkwell-col-editor-host .cm-editor.cm-focused {
+	outline: none !important;
+}
+
+.inkwell-col-editor-host .cm-scroller {
+	overflow: visible !important;
+	font-family: var(--font-text, var(--font-interface));
+	font-size: var(--font-text-size, 16px);
+	line-height: var(--line-height-normal, 1.5);
+	padding: 0 !important;
+}
+
+.inkwell-col-editor-host .cm-content {
+	padding: 2px 0 !important;
+	min-height: 56px;
+	caret-color: var(--caret-color, var(--text-normal));
+	color: var(--text-normal);
+}
+
+.inkwell-col-editor-host .cm-line {
+	padding: 1px 0 !important;
+}
+
+.inkwell-col-heading-1 {
+	font-size: var(--h1-size, 1.6em);
+	font-weight: var(--h1-weight, 700);
+	line-height: var(--h1-line-height, 1.25);
+}
+
+.inkwell-col-heading-2 {
+	font-size: var(--h2-size, 1.4em);
+	font-weight: var(--h2-weight, 650);
+	line-height: var(--h2-line-height, 1.3);
+}
+
+.inkwell-col-heading-3 {
+	font-size: var(--h3-size, 1.2em);
+	font-weight: var(--h3-weight, 600);
+	line-height: var(--h3-line-height, 1.35);
+}
+
+.inkwell-col-heading-4,
+.inkwell-col-heading-5,
+.inkwell-col-heading-6 {
+	font-size: var(--h4-size, 1.08em);
+	font-weight: var(--h4-weight, 600);
+}
+
+.inkwell-col-list-bullet {
+	color: var(--list-marker-color, var(--text-muted));
+	font-weight: bold;
+}
+
+.inkwell-col-pane-footer {
+	display: flex;
+	justify-content: flex-end;
+	margin-top: 8px;
+	padding-top: 4px;
+	opacity: 0.45;
+	transition: opacity 0.15s ease;
+}
+
+.inkwell-col-pane:hover .inkwell-col-pane-footer,
+.inkwell-col-pane:focus-within .inkwell-col-pane-footer {
+	opacity: 1;
+}
+
+.inkwell-col-divider {
+	width: 12px;
+	margin: 0 -6px;
+	z-index: 20;
+	cursor: col-resize;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	user-select: none;
+	flex-shrink: 0;
+}
+
+.inkwell-col-divider-handle {
+	width: 3px;
+	height: 36px;
+	border-radius: 2px;
+	background-color: var(--background-modifier-border);
+	transition: background-color 0.15s ease, height 0.15s ease;
+}
+
+.inkwell-col-divider:hover .inkwell-col-divider-handle,
+.inkwell-col-divider.is-dragging .inkwell-col-divider-handle {
+	background-color: var(--interactive-accent);
+	height: 50px;
+}
+
+.inkwell-col-mini-btn {
+	font-size: 10px;
+	padding: 2px 6px;
+	border-radius: 4px;
+	border: 1px solid var(--background-modifier-border);
+	background-color: var(--background-secondary);
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.inkwell-col-mini-btn:hover {
+	color: var(--text-normal);
+	background-color: var(--background-modifier-hover);
+}
+
+.inkwell-col-move-btn {
+	color: var(--interactive-accent);
+}
+
+.inkwell-col-footer {
+	padding: 6px 12px;
+	border-top: 1px solid var(--background-modifier-border);
+	background-color: var(--background-secondary);
+	text-align: center;
+}
+
+.inkwell-col-btn-exit {
+	width: 100%;
+	padding: 4px 12px;
+	border: 1px dashed var(--background-modifier-border);
+	border-radius: 4px;
+	background-color: transparent;
+	color: var(--text-muted);
+	font-size: 11px;
+	cursor: pointer;
+	transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.inkwell-col-btn-exit:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+/* Callout Resizer (MIT-adapted comparative prototype) */
+.inkwell-callout-resizer {
+	position: relative;
+	width: 12px;
+	margin: 0 -6px;
+	cursor: col-resize;
+	z-index: 25;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	user-select: none;
+	flex-shrink: 0;
+}
+
+.inkwell-callout-resizer-handle {
+	width: 3px;
+	height: 36px;
+	border-radius: 2px;
+	background-color: var(--background-modifier-border);
+	transition: background-color 0.15s ease, height 0.15s ease;
+}
+
+.inkwell-callout-resizer:hover .inkwell-callout-resizer-handle,
+.inkwell-callout-resizer.is-dragging .inkwell-callout-resizer-handle {
+	background-color: var(--interactive-accent);
+	height: 50px;
+}
+
+/* ==========================================================================
+   Notion-Inspired Seamless Page & Block Editing Mode (.is-notion-mode)
+   ========================================================================== */
+
+.inkwell-col-divider-pill {
+	display: none;
+}
+
+.inkwell-visual-columns-root.is-notion-mode {
+	margin: 0.4rem 0;
+	border: none !important;
+	border-radius: 0 !important;
+	background: transparent !important;
+	box-shadow: none !important;
+	overflow: visible !important;
+}
+
+.inkwell-visual-columns-root.is-notion-mode > .inkwell-col-header,
+.inkwell-visual-columns-root.is-notion-mode .inkwell-col-pane-footer,
+.inkwell-visual-columns-root.is-notion-mode > .inkwell-col-footer {
+	display: none !important;
+}
+
+.inkwell-visual-columns-root.is-notion-mode .inkwell-col-container {
+	background: transparent !important;
+	min-height: 36px;
+	align-items: flex-start;
+}
+
+.inkwell-visual-columns-root.is-notion-mode .inkwell-col-pane {
+	padding: 2px 0 !important;
+	border: none !important;
+	background: transparent !important;
+	box-shadow: none !important;
+}
+
+.inkwell-visual-columns-root.is-notion-mode .inkwell-col-pane:focus-within {
+	background: transparent !important;
+	box-shadow: none !important;
+}
+
+.inkwell-visual-columns-root.is-notion-mode .inkwell-col-editor-host,
+.inkwell-visual-columns-root.is-notion-mode .inkwell-col-editor-host .cm-content {
+	min-height: 28px;
+}
+
+.inkwell-visual-columns-root.is-notion-mode .inkwell-col-divider {
+	width: 36px;
+	margin: 0;
+	align-self: stretch;
+	position: relative;
+}
+
+.inkwell-visual-columns-root.is-notion-mode .inkwell-col-divider-handle {
+	width: 2px;
+	height: 100%;
+	min-height: 28px;
+	border-radius: 2px;
+	background-color: var(--background-modifier-border);
+	opacity: 0;
+	transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.inkwell-visual-columns-root.is-notion-mode .inkwell-col-container:hover .inkwell-col-divider-handle {
+	opacity: 0.45;
+}
+
+.inkwell-visual-columns-root.is-notion-mode .inkwell-col-divider:hover .inkwell-col-divider-handle,
+.inkwell-visual-columns-root.is-notion-mode .inkwell-col-divider.is-dragging .inkwell-col-divider-handle {
+	opacity: 1;
+	background-color: var(--interactive-accent);
+	width: 3px;
+}
+
+.inkwell-visual-columns-root.is-notion-mode .inkwell-col-divider.is-dragging .inkwell-col-divider-pill {
+	display: inline-block;
+	position: absolute;
+	top: -22px;
+	left: 50%;
+	transform: translateX(-50%);
+	padding: 2px 7px;
+	font-size: 10px;
+	font-family: var(--font-monospace);
+	color: var(--text-on-accent);
+	background-color: var(--interactive-accent);
+	border-radius: 10px;
+	white-space: nowrap;
+	pointer-events: none;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Hover Gutter (+ and ⋮⋮ Drag Handle) */
+.inkwell-block-gutter.is-hidden,
+.inkwell-block-drop-indicator.is-hidden {
+	display: none !important;
+}
+
+.inkwell-block-gutter {
+	position: fixed;
+	z-index: 900;
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	height: 22px;
+	user-select: none;
+	pointer-events: auto;
+	opacity: 0.78;
+	transition: opacity 0.12s ease;
+}
+
+.inkwell-block-gutter:hover,
+.inkwell-block-gutter.is-dragging {
+	opacity: 1;
+}
+
+.inkwell-block-gutter-btn {
+	width: 18px;
+	height: 20px;
+	padding: 0;
+	margin: 0;
+	border: none !important;
+	box-shadow: none !important;
+	background: transparent !important;
+	color: var(--text-faint);
+	border-radius: 4px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.inkwell-block-gutter-btn:hover {
+	background-color: var(--background-modifier-hover) !important;
+	color: var(--text-normal);
+}
+
+.inkwell-block-handle-btn {
+	cursor: grab;
+}
+
+.inkwell-block-handle-btn:active {
+	cursor: grabbing;
+}
+
+body.inkwell-is-dragging-block,
+body.inkwell-is-dragging-block * {
+	cursor: grabbing !important;
+	user-select: none !important;
+}
+
+/* Visual Drop Indicator (before / after / left / right) */
+.inkwell-block-drop-indicator {
+	position: fixed;
+	z-index: 950;
+	background-color: var(--interactive-accent);
+	border-radius: 2px;
+	pointer-events: none;
+	box-shadow: 0 0 8px rgba(var(--mono-rgb-100), 0.18);
+}
+
+.inkwell-block-drop-indicator.is-horizontal {
+	height: 3px;
+}
+
+.inkwell-block-drop-indicator.is-vertical {
+	width: 4px;
+}
+
+.inkwell-block-drop-indicator.is-rejected {
+	background-color: var(--text-error, #e03131) !important;
+}
+
+.inkwell-block-drop-indicator.is-rejected .inkwell-block-drop-label {
+	background-color: var(--text-error, #e03131) !important;
+}
+
+.inkwell-block-drop-label {
+	position: absolute;
+	padding: 2px 8px;
+	font-size: 11px;
+	font-weight: 500;
+	color: var(--text-on-accent, #ffffff);
+	background-color: var(--interactive-accent);
+	border-radius: 10px;
+	white-space: nowrap;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
+}
+
+.inkwell-block-drop-indicator.is-horizontal .inkwell-block-drop-label {
+	right: 0;
+	top: -22px;
+}
+
+.inkwell-block-drop-indicator.is-vertical .inkwell-block-drop-label {
+	top: -24px;
+	left: 50%;
+	transform: translateX(-50%);
+}
+
+/* Floating Drag Ghost */
+.inkwell-block-drag-ghost {
+	position: fixed;
+	z-index: 960;
+	max-width: 240px;
+	padding: 4px 10px;
+	font-size: 12px;
+	color: var(--text-normal);
+	background-color: var(--background-secondary);
+	border: 1px solid var(--interactive-accent);
+	border-radius: 6px;
+	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+	pointer-events: none;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	opacity: 0.92;
+}
+
+/* Contextual Block Action Menu (click on ⋮⋮) */
+.inkwell-block-action-menu {
+	position: fixed;
+	z-index: 980;
+	min-width: 230px;
+	padding: 6px;
+	background-color: var(--background-primary);
+	border: 1px solid var(--background-modifier-border-hover, var(--background-modifier-border));
+	border-radius: 8px;
+	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.24);
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.inkwell-block-menu-section {
+	padding: 4px 8px 2px 8px;
+	font-size: 10px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--text-faint);
+}
+
+.inkwell-block-menu-item {
+	display: flex;
+	align-items: center;
+	width: 100%;
+	padding: 5px 8px;
+	border: none !important;
+	box-shadow: none !important;
+	background: transparent !important;
+	color: var(--text-normal);
+	font-size: 12.5px;
+	text-align: left;
+	border-radius: 5px;
+	cursor: pointer;
+}
+
+.inkwell-block-menu-item:hover {
+	background-color: var(--background-modifier-hover) !important;
+}
+
+/* ==========================================================================
+   Page Full-Width Mode (Scoped to Markdown Note Panes, Reversible)
+   ========================================================================== */
+
+body.inkwell-page-full-width .workspace-leaf-content[data-type="markdown"] {
+	--file-line-width: 100%;
+	--file-margins: 24px 48px;
+}
+
+body.inkwell-page-full-width .workspace-leaf-content[data-type="markdown"] .markdown-source-view.mod-cm6 .cm-sizer,
+body.inkwell-page-full-width .workspace-leaf-content[data-type="markdown"] .markdown-source-view.mod-cm6 .cm-content,
+body.inkwell-page-full-width .workspace-leaf-content[data-type="markdown"] .markdown-source-view.mod-cm6 .cm-line,
+body.inkwell-page-full-width .workspace-leaf-content[data-type="markdown"] .markdown-preview-view .markdown-preview-sizer {
+	max-width: 100%;
+	box-sizing: border-box;
+}
+
+/* Visual Callout (Encadré) & Collapsible Toggle (Menu dépliant) Blocks */
+
+.inkwell-visual-callout-root {
+	position: relative;
+	margin: 0.45rem 0;
+	width: 100%;
+	box-sizing: border-box;
+	user-select: text;
+}
+
+.inkwell-visual-callout-root.is-callout-block {
+	padding: 10px 14px;
+	border-radius: 8px;
+	background-color: var(--background-secondary-alt, var(--background-secondary));
+	border: 1px solid var(--background-modifier-border);
+}
+
+.inkwell-visual-callout-root.is-toggle-block {
+	padding: 4px 6px;
+	border-radius: 6px;
+	background: transparent;
+}
+
+.inkwell-visual-callout-source-btn {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	z-index: 15;
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	border: 1px solid var(--background-modifier-border) !important;
+	border-radius: 4px;
+	background-color: var(--background-primary) !important;
+	color: var(--text-muted);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	opacity: 0;
+	transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.inkwell-visual-callout-root:hover .inkwell-visual-callout-source-btn,
+.inkwell-visual-callout-root:focus-within .inkwell-visual-callout-source-btn {
+	opacity: 0.75;
+}
+
+.inkwell-visual-callout-source-btn:hover {
+	opacity: 1 !important;
+	color: var(--text-normal);
+	background-color: var(--background-modifier-hover) !important;
+}
+
+.inkwell-visual-callout-source-btn svg {
+	width: 14px;
+	height: 14px;
+}
+
+.inkwell-visual-callout-box-row {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+}
+
+.inkwell-visual-callout-icon {
+	flex-shrink: 0;
+	width: 20px;
+	height: 22px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--interactive-accent);
+	margin-top: 2px;
+}
+
+.inkwell-visual-callout-icon svg {
+	width: 17px;
+	height: 17px;
+}
+
+.inkwell-visual-callout-content-col {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+.inkwell-visual-callout-title-input {
+	width: 100%;
+	border: none !important;
+	box-shadow: none !important;
+	background: transparent !important;
+	padding: 0 0 4px 0 !important;
+	margin: 0 !important;
+	font-weight: 600;
+	font-size: var(--font-text-size, 16px);
+	color: var(--text-normal);
+	outline: none !important;
+}
+
+.inkwell-visual-toggle-header-row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.inkwell-visual-toggle-btn {
+	width: 22px;
+	height: 22px;
+	padding: 0;
+	margin: 0;
+	border: none !important;
+	box-shadow: none !important;
+	background: transparent !important;
+	color: var(--text-muted);
+	border-radius: 4px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	flex-shrink: 0;
+	transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.inkwell-visual-toggle-btn:hover {
+	background-color: var(--background-modifier-hover) !important;
+	color: var(--text-normal);
+}
+
+.inkwell-visual-toggle-btn svg {
+	width: 16px;
+	height: 16px;
+}
+
+.inkwell-visual-toggle-title-input {
+	flex: 1 1 auto;
+	border: none !important;
+	box-shadow: none !important;
+	background: transparent !important;
+	padding: 2px 4px !important;
+	margin: 0 !important;
+	font-weight: 600;
+	font-size: var(--font-text-size, 16px);
+	color: var(--text-normal);
+	outline: none !important;
+}
+
+.inkwell-visual-toggle-body-wrap {
+	padding-left: 26px;
+	margin-top: 2px;
+}
+
+.inkwell-visual-toggle-body-wrap.is-collapsed {
+	display: none !important;
+}
+
+.inkwell-visual-callout-editor-host .cm-editor {
+	background: transparent !important;
+	border: none !important;
+	outline: none !important;
+}
+
+.inkwell-visual-callout-editor-host .cm-scroller {
+	overflow: visible !important;
+	font-family: var(--font-text, var(--font-interface));
+	font-size: var(--font-text-size, 16px);
+	line-height: var(--line-height-normal, 1.5);
+	padding: 0 !important;
+}
+
+.inkwell-visual-callout-editor-host .cm-content {
+	padding: 1px 0 !important;
+	min-height: 24px;
+	caret-color: var(--caret-color, var(--text-normal));
+	color: var(--text-normal);
+}
+
+.inkwell-visual-callout-raw-source {
+	padding: 8px 10px;
+	border-radius: 6px;
+	background-color: var(--background-secondary);
+	border: 1px dashed var(--interactive-accent);
+	font-family: var(--font-monospace);
+	font-size: 0.9em;
+}
+
+/* ==========================================================================
+   Visual Quotes, Tasks, Lists, Code Blocks & Dividers (Root & Columns)
+   ========================================================================== */
+
+.cm-line.inkwell-visual-quote-line {
+	border-left: 3px solid var(--interactive-accent) !important;
+	padding-left: 14px !important;
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+.cm-line.inkwell-visual-quote-line.HyperMD-quote::before {
+	display: none !important;
+}
+
+.inkwell-col-task-checkbox-wrap {
+	display: inline-flex;
+	align-items: center;
+	margin-right: 6px;
+	vertical-align: middle;
+}
+
+.inkwell-col-task-checkbox {
+	cursor: pointer;
+	margin: 0 !important;
+}
+
+.inkwell-task-checked-text {
+	text-decoration: line-through;
+	color: var(--text-muted);
+}
+
+.inkwell-col-list-number {
+	color: var(--list-marker-color, var(--text-muted));
+	font-variant-numeric: tabular-nums;
+	font-weight: 500;
+}
+
+.inkwell-col-inline-code {
+	font-family: var(--font-monospace);
+	font-size: 0.88em;
+	background-color: var(--code-background, var(--background-secondary));
+	padding: 1px 5px;
+	border-radius: 4px;
+}
+
+/* Visual Horizontal Rule (Séparateur) */
+.cm-line.inkwell-visual-hr-line {
+	padding: 6px 0 !important;
+}
+
+.inkwell-visual-hr-widget {
+	display: block;
+	width: 100%;
+	padding: 6px 0;
+}
+
+.inkwell-visual-hr-el {
+	border: none;
+	border-top: 1px solid var(--hr-color, var(--background-modifier-border));
+	margin: 0;
+	width: 100%;
+}
+
+/* Visual Code Block inside Columns */
+.cm-line.inkwell-visual-code-fence-start {
+	background-color: var(--code-background, var(--background-secondary));
+	border-top-left-radius: 6px;
+	border-top-right-radius: 6px;
+	padding: 4px 10px 2px 10px !important;
+	font-family: var(--font-monospace);
+	font-size: 0.82em;
+	color: var(--text-muted);
+}
+
+.inkwell-visual-code-badge {
+	display: inline-block;
+	font-family: var(--font-monospace);
+	font-size: 10px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--text-faint);
+	user-select: none;
+}
+
+.cm-line.inkwell-visual-code-line {
+	background-color: var(--code-background, var(--background-secondary));
+	padding: 1px 12px !important;
+	font-family: var(--font-monospace) !important;
+	font-size: 0.9em;
+}
+
+.cm-line.inkwell-visual-code-fence-end {
+	background-color: var(--code-background, var(--background-secondary));
+	border-bottom-left-radius: 6px;
+	border-bottom-right-radius: 6px;
+	padding: 0 10px 4px 10px !important;
+	min-height: 6px;
+	font-family: var(--font-monospace);
+	font-size: 0.82em;
+}
+
+/* Callout & Toggle inside Column Sub-Editors */
+.cm-line.inkwell-col-toggle-header {
+	font-weight: 600;
+	padding-top: 2px !important;
+	padding-bottom: 2px !important;
+}
+
+.inkwell-col-toggle-chevron-btn {
+	border: none !important;
+	box-shadow: none !important;
+	background: transparent !important;
+	color: var(--text-muted);
+	cursor: pointer;
+	padding: 0 6px 0 0;
+	font-size: 13px;
+}
+
+.inkwell-col-toggle-chevron-btn:hover {
+	color: var(--text-normal);
+}
+
+.cm-line.inkwell-col-toggle-body {
+	padding-left: 18px !important;
+	border-left: 2px solid var(--background-modifier-border);
+}
+
+.cm-line.inkwell-col-toggle-body-collapsed {
+	display: none !important;
+}
+
+.cm-line.inkwell-col-callout-header {
+	background-color: var(--background-secondary-alt, var(--background-secondary));
+	border-top-left-radius: 6px;
+	border-top-right-radius: 6px;
+	padding: 6px 10px 2px 10px !important;
+	font-weight: 600;
+}
+
+.inkwell-col-callout-badge {
+	color: var(--interactive-accent);
+	margin-right: 4px;
+}
+
+.cm-line.inkwell-col-callout-body {
+	background-color: var(--background-secondary-alt, var(--background-secondary));
+	padding: 2px 10px 4px 10px !important;
+	border-bottom-left-radius: 6px;
+	border-bottom-right-radius: 6px;
+}
+
+/* ==========================================================================
+   Collapsible Headings H1–H3 & Hierarchical Section Folding
+   ========================================================================== */
+
+.cm-line.inkwell-heading-folded-line,
+.inkwell-visual-callout-root.is-folded-by-heading,
+.inkwell-visual-columns-root.is-folded-by-heading {
+	display: none !important;
+}
+
+.inkwell-heading-fold-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	height: 20px;
+	padding: 0;
+	margin: 0 5px 0 0;
+	border: none !important;
+	box-shadow: none !important;
+	background: transparent !important;
+	color: var(--text-muted);
+	border-radius: 4px;
+	cursor: pointer;
+	vertical-align: middle;
+	user-select: none;
+	transition: opacity 0.14s ease, background-color 0.14s ease, color 0.14s ease;
+}
+
+.inkwell-heading-fold-btn svg {
+	width: 15px;
+	height: 15px;
+}
+
+.inkwell-heading-fold-btn.is-hover-toggle {
+	opacity: 0.28;
+}
+
+.cm-line:hover .inkwell-heading-fold-btn.is-hover-toggle,
+.inkwell-heading-fold-btn.is-persistent-toggle,
+.inkwell-heading-fold-btn.is-collapsed {
+	opacity: 1;
+}
+
+.inkwell-heading-fold-btn.is-persistent-toggle,
+.inkwell-heading-fold-btn.is-collapsed {
+	color: var(--interactive-accent);
+	background-color: rgba(var(--mono-rgb-100, 128, 128, 128), 0.06) !important;
+}
+
+.inkwell-heading-fold-btn:hover {
+	opacity: 1 !important;
+	color: var(--text-normal);
+	background-color: var(--background-modifier-hover) !important;
+}
+
+.cm-line.inkwell-heading-is-collapsed {
+	border-bottom: 1px dashed var(--background-modifier-border);
+	padding-bottom: 3px !important;
+}
+
+/* ==========================================================================
+   Code Block Header Bar & Language Selector (No Raw Backticks)
+   ========================================================================== */
+
+.inkwell-visual-code-header-bar {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 2px 0;
+	user-select: none;
+}
+
+.inkwell-visual-code-lang-input {
+	font-family: var(--font-monospace);
+	font-size: 11px;
+	color: var(--text-muted);
+	background-color: var(--background-primary);
+	border: 1px solid var(--background-modifier-border) !important;
+	border-radius: 4px;
+	padding: 1px 6px !important;
+	width: 110px;
+	height: 20px;
+	outline: none !important;
+}
+
+.inkwell-visual-code-lang-input:focus {
+	border-color: var(--interactive-accent) !important;
+	color: var(--text-normal);
+}
+
+/* Visual Editable Table Widget (Root & Columns) */
+
+.inkwell-visual-table-root {
+	position: relative;
+	display: block;
+	width: 100%;
+	margin: 0.45rem 0;
+	padding: 8px 10px;
+	border-radius: 8px;
+	border: 1px solid var(--background-modifier-border);
+	background-color: var(--background-primary);
+	box-sizing: border-box;
+}
+
+.inkwell-visual-table-wrap {
+	width: 100%;
+	overflow-x: auto;
+}
+
+.inkwell-visual-table {
+	width: 100%;
+	border-collapse: collapse;
+	border-spacing: 0;
+	font-size: 0.94em;
+}
+
+.inkwell-visual-table th,
+.inkwell-visual-table td,
+.inkwell-visual-table-th,
+.inkwell-visual-table-td {
+	border: 1px solid var(--background-modifier-border);
+	padding: 0 !important;
+	min-width: 80px;
+}
+
+.inkwell-visual-table th,
+.inkwell-visual-table-th {
+	background-color: var(--background-secondary);
+}
+
+.inkwell-visual-table-cell-input {
+	width: 100%;
+	box-sizing: border-box;
+	border: none !important;
+	box-shadow: none !important;
+	background: transparent !important;
+	padding: 6px 8px !important;
+	margin: 0 !important;
+	font-size: 13.5px;
+	color: var(--text-normal);
+	outline: none !important;
+}
+
+.inkwell-visual-table-cell-input.is-header-cell {
+	font-weight: 600;
+}
+
+.inkwell-visual-table-cell-input:focus {
+	background-color: var(--background-primary-alt, var(--background-secondary)) !important;
+	box-shadow: inset 0 0 0 1.5px var(--interactive-accent) !important;
+}
+
+.inkwell-visual-table-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	margin-top: 6px;
+	padding-top: 4px;
+}
+
+.inkwell-visual-table-btn,
+.inkwell-visual-table-action-btn,
+.inkwell-visual-table-source-btn {
+	font-size: 11px;
+	padding: 2px 8px;
+	height: 22px;
+	border-radius: 4px;
+	border: 1px solid var(--background-modifier-border) !important;
+	background-color: var(--background-secondary) !important;
+	color: var(--text-muted);
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.inkwell-visual-table-btn:hover,
+.inkwell-visual-table-action-btn:hover,
+.inkwell-visual-table-source-btn:hover {
+	color: var(--text-normal);
+	background-color: var(--background-modifier-hover) !important;
+}
+
+.inkwell-visual-table-source-textarea,
+.inkwell-visual-table-raw-area {
+	width: 100%;
+	min-height: 76px;
+	font-family: var(--font-monospace);
+	font-size: 12.5px;
+	padding: 6px 8px;
+	border-radius: 6px;
+	border: 1px solid var(--background-modifier-border);
+	background-color: var(--background-secondary);
+	color: var(--text-normal);
+	resize: vertical;
+	box-sizing: border-box;
+}
+
+/* ==========================================================================
+   Visual Media Embed Widget (Image, Video, Audio, File Card)
+   ========================================================================== */
+
+.inkwell-visual-media-root {
+	position: relative;
+	display: block;
+	width: 100%;
+	margin: 0.45rem 0;
+	padding: 8px 10px;
+	border-radius: 8px;
+	border: 1px solid var(--background-modifier-border);
+	background-color: var(--background-primary);
+	box-sizing: border-box;
+}
+
+.inkwell-visual-media-source-btn {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	z-index: 10;
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	border-radius: 4px;
+	border: 1px solid var(--background-modifier-border) !important;
+	background-color: var(--background-primary) !important;
+	color: var(--text-muted);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	opacity: 0;
+	transition: opacity 0.14s ease;
+}
+
+.inkwell-visual-media-root:hover .inkwell-visual-media-source-btn,
+.inkwell-visual-media-root:focus-within .inkwell-visual-media-source-btn {
+	opacity: 0.85;
+}
+
+.inkwell-visual-media-source-btn:hover {
+	opacity: 1 !important;
+	color: var(--text-normal);
+}
+
+.inkwell-visual-media-source-btn svg {
+	width: 14px;
+	height: 14px;
+}
+
+.inkwell-visual-media-img-wrap {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 4px;
+}
+
+.inkwell-visual-media-img {
+	max-width: 100%;
+	height: auto;
+	border-radius: 6px;
+	display: block;
+}
+
+.inkwell-visual-media-video-wrap {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.inkwell-visual-media-video {
+	max-width: 100%;
+	max-height: 360px;
+	border-radius: 6px;
+	background-color: #000;
+}
+
+.inkwell-visual-media-audio-card {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding: 4px 2px;
+}
+
+.inkwell-visual-media-audio-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--text-normal);
+}
+
+.inkwell-visual-media-audio-icon {
+	display: inline-flex;
+	color: var(--interactive-accent);
+}
+
+.inkwell-visual-media-audio {
+	width: 100%;
+	height: 36px;
+}
+
+.inkwell-visual-media-file-card {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 6px 8px;
+	border-radius: 6px;
+	background-color: var(--background-secondary);
+}
+
+.inkwell-visual-media-file-icon {
+	display: inline-flex;
+	color: var(--interactive-accent);
+}
+
+.inkwell-visual-media-file-info {
+	flex: 1 1 auto;
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.inkwell-visual-media-file-name {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--text-normal);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.inkwell-visual-media-file-meta {
+	font-size: 11px;
+	color: var(--text-muted);
+}
+
+.inkwell-visual-media-file-open-btn {
+	font-size: 11.5px;
+	padding: 3px 10px;
+	border-radius: 4px;
+	border: 1px solid var(--background-modifier-border) !important;
+	background-color: var(--background-primary) !important;
+	color: var(--text-normal);
+	cursor: pointer;
+}
+
+.inkwell-visual-media-file-open-btn:hover {
+	background-color: var(--background-modifier-hover) !important;
+}
+
+.inkwell-visual-media-caption {
+	font-size: 11.5px;
+	color: var(--text-muted);
+}
+
+.inkwell-visual-media-missing {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 8px;
+	color: var(--text-muted);
+	font-size: 12.5px;
+}
+
+.inkwell-visual-media-source-bar,
+.inkwell-visual-media-raw-row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-top: 6px;
+	padding-top: 6px;
+	border-top: 1px dashed var(--background-modifier-border);
+}
+
+.inkwell-visual-media-source-bar.is-hidden {
+	display: none !important;
+}
+
+.inkwell-visual-media-source-input,
+.inkwell-visual-media-raw-input {
+	flex: 1 1 auto;
+	font-family: var(--font-monospace);
+	font-size: 12px;
+	padding: 3px 8px !important;
+	border-radius: 4px;
+	border: 1px solid var(--background-modifier-border) !important;
+	background-color: var(--background-secondary) !important;
+	color: var(--text-normal);
+}
+
+.inkwell-visual-media-source-save-btn {
+	font-size: 11px;
+	padding: 3px 10px;
+	border-radius: 4px;
+	background-color: var(--interactive-accent) !important;
+	color: var(--text-on-accent) !important;
+	border: none !important;
+	cursor: pointer;
+}
+
+/* ==========================================================================
+   Visual Math ($$) & Mermaid Diagram Widget (Preview + Source Toggle)
+   ========================================================================== */
+
+.inkwell-visual-math-mermaid-root {
+	position: relative;
+	display: block;
+	width: 100%;
+	margin: 0.45rem 0;
+	padding: 8px 12px;
+	border-radius: 8px;
+	border: 1px solid var(--background-modifier-border);
+	background-color: var(--background-primary);
+	box-sizing: border-box;
+}
+
+.inkwell-visual-math-mermaid-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 6px;
+}
+
+.inkwell-visual-math-mermaid-badge {
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.03em;
+}
+
+.inkwell-visual-math-mermaid-toggle-btn,
+.inkwell-visual-math-mermaid-edit-btn,
+.inkwell-visual-toc-freeze-btn {
+	font-size: 11px;
+	padding: 2px 8px;
+	height: 22px;
+	border-radius: 4px;
+	border: 1px solid var(--background-modifier-border) !important;
+	background-color: var(--background-secondary) !important;
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.inkwell-visual-math-mermaid-toggle-btn:hover,
+.inkwell-visual-math-mermaid-edit-btn:hover,
+.inkwell-visual-toc-freeze-btn:hover {
+	color: var(--text-normal);
+	background-color: var(--background-modifier-hover) !important;
+}
+
+.inkwell-visual-math-mermaid-preview {
+	padding: 6px 4px;
+	min-height: 28px;
+	cursor: pointer;
+	overflow-x: auto;
+}
+
+.inkwell-visual-math-mermaid-empty {
+	color: var(--text-muted);
+	font-size: 12.5px;
+	font-style: italic;
+}
+
+.inkwell-visual-math-mermaid-editor-wrap {
+	margin-top: 6px;
+	padding-top: 6px;
+	border-top: 1px dashed var(--background-modifier-border);
+}
+
+.inkwell-visual-math-mermaid-editor-wrap.is-hidden {
+	display: none !important;
+}
+
+.inkwell-visual-math-mermaid-textarea {
+	width: 100%;
+	min-height: 70px;
+	font-family: var(--font-monospace);
+	font-size: 12.5px;
+	padding: 6px 8px;
+	border-radius: 6px;
+	border: 1px solid var(--interactive-accent);
+	background-color: var(--background-secondary);
+	color: var(--text-normal);
+	resize: vertical;
+	box-sizing: border-box;
+}
+
+/* ==========================================================================
+   Dynamic Table of Contents (TOC) Widget (Root & Columns)
+   ========================================================================== */
+
+.inkwell-visual-callout-root.is-toc-block,
+.inkwell-visual-toc-root,
+.inkwell-visual-toc-col-card {
+	display: block;
+	width: 100%;
+	padding: 10px 14px;
+	margin: 0.45rem 0;
+	border-radius: 8px;
+	border: 1px solid var(--background-modifier-border);
+	background-color: var(--background-secondary-alt, var(--background-secondary));
+	box-sizing: border-box;
+}
+
+.inkwell-visual-toc-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 6px;
+}
+
+.inkwell-visual-toc-icon {
+	display: inline-flex;
+	color: var(--interactive-accent);
+}
+
+.inkwell-visual-toc-icon svg {
+	width: 16px;
+	height: 16px;
+}
+
+.inkwell-visual-toc-title {
+	font-size: 13.5px;
+	font-weight: 600;
+	color: var(--text-normal);
+	flex: 1 1 auto;
+}
+
+.inkwell-visual-toc-badge {
+	font-size: 10.5px;
+	padding: 1px 7px;
+	border-radius: 10px;
+	background-color: rgba(var(--mono-rgb-100, 128, 128, 128), 0.1);
+	color: var(--text-muted);
+}
+
+.inkwell-visual-toc-list {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.inkwell-visual-toc-empty {
+	font-size: 12.5px;
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+.inkwell-visual-toc-item {
+	display: flex;
+	align-items: center;
+}
+
+.inkwell-visual-toc-link {
+	border: none !important;
+	box-shadow: none !important;
+	background: transparent !important;
+	padding: 2px 6px !important;
+	margin: 0 !important;
+	font-size: 13px;
+	color: var(--text-normal);
+	text-align: left;
+	border-radius: 4px;
+	cursor: pointer;
+}
+
+.inkwell-visual-toc-link:hover {
+	color: var(--interactive-accent);
+	background-color: var(--background-modifier-hover) !important;
+}
 
 
 
