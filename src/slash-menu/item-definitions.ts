@@ -364,8 +364,8 @@ export function getStaticInsertTemplate(id: string): InsertTemplate | null {
 		}
 		case 'tabs': {
 			const template =
-				'> [!tabs]\n>\n> > [!tab|Onglet 1]\n> > \n>\n> > [!tab|Onglet 2]\n> > \n';
-			const cursorOffset = '> [!tabs]\n>\n> > [!tab|Onglet 1]\n> > '.length;
+				'> [!tabs]\n>\n> > [!tab] Onglet 1\n> > \n>\n> > [!tab] Onglet 2\n> > \n';
+			const cursorOffset = '> [!tabs]\n>\n> > [!tab] Onglet 1\n> > '.length;
 			return { text: template, cursorOffset };
 		}
 		case 'divider':

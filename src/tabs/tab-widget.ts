@@ -19,6 +19,7 @@ import { editorLivePreviewField, MarkdownView, setIcon } from 'obsidian';
 import type InkwellPlugin from '../main';
 import { createTagNavigationExtension } from '../editor/tag-navigation/extension';
 import { createSlashMenuExtension } from '../slash-menu/extension';
+import { closeActiveCalloutStylePopover } from '../blocks/callout-style-popover';
 import { minimalDiff } from '../utils/text-diff';
 import { createColumnVisualMarkdownExtension } from '../columns/column-markdown-deco';
 import { localOffsetToParentOffset } from '../columns/parser';
@@ -490,6 +491,8 @@ export class VisualTabsController {
 		if (newIndex < 0 || newIndex >= this.data.tabs.length) return;
 		if (newIndex === this.activeTabIndex && this.activeEditorView) return;
 
+		closeActiveCalloutStylePopover();
+
 		// Save current editor text before switching
 		if (this.activeEditorView && this.data.tabs[this.activeTabIndex]) {
 			this.data.tabs[this.activeTabIndex]!.text =
@@ -797,6 +800,7 @@ export class VisualTabsController {
 	}
 
 	public destroy(): void {
+		closeActiveCalloutStylePopover();
 		if (this.activeEditorView) {
 			this.activeEditorView.destroy();
 			this.activeEditorView = null;

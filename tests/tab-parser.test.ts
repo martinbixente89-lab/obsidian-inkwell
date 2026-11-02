@@ -28,7 +28,10 @@ test('tab-parser: header detection and title sanitization', () => {
 	assert.strictEqual(sub2.isTab, true);
 	assert.strictEqual(sub2.title, 'Titre alternatif');
 
-	assert.strictEqual(sanitizeTabTitle(' Onglet [1] | test \n'), 'Onglet 1 test');
+	assert.strictEqual(
+		sanitizeTabTitle(' [Projet 2026] Étape 1 & 2 : "Spécial" (L\'analyse) \n\r'),
+		'[Projet 2026] Étape 1 & 2 : "Spécial" (L\'analyse)',
+	);
 	assert.strictEqual(sanitizeTabTitle(''), 'Onglet');
 });
 
@@ -79,9 +82,9 @@ test('tab-parser: serialization preserves tabs and contents cleanly', () => {
 
 	const serialized = serializeTabsMarkdown(tabs);
 	assert.ok(serialized.includes('> [!tabs]'));
-	assert.ok(serialized.includes('> > [!tab|Notes]'));
+	assert.ok(serialized.includes('> > [!tab] Notes'));
 	assert.ok(serialized.includes('> > Premier paragraphe'));
-	assert.ok(serialized.includes('> > [!tab|Synthèse]'));
+	assert.ok(serialized.includes('> > [!tab] Synthèse'));
 	assert.ok(serialized.includes('> > Résumé des points clés'));
 
 	const roundTrip = parseTabsMarkdown(serialized);

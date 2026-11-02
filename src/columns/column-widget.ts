@@ -21,6 +21,7 @@ import {
 	onHeadingFoldChange,
 } from '../blocks/heading-fold';
 import { createColumnVisualMarkdownExtension } from './column-markdown-deco';
+import { closeActiveCalloutStylePopover } from '../blocks/callout-style-popover';
 import {
 	ColumnLineMapEntry,
 	getBalancedRatios,
@@ -774,6 +775,7 @@ export class ColumnWidgetController {
 	}
 
 	public destroy(): void {
+		closeActiveCalloutStylePopover();
 		if (this.unsubscribeFoldChange) {
 			this.unsubscribeFoldChange();
 			this.unsubscribeFoldChange = null;

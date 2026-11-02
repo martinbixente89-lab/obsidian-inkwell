@@ -105,6 +105,9 @@ export class CalloutStylePopover {
 	public close(): void {
 		if (this.isDestroyed) return;
 		this.isDestroyed = true;
+		if (activeCalloutStylePopoverInstance === this) {
+			activeCalloutStylePopoverInstance = null;
+		}
 		document.removeEventListener('pointerdown', this.docPointerHandler, true);
 		document.removeEventListener('keydown', this.docKeyHandler, true);
 		if (this.popoverEl.parentNode) {
@@ -452,11 +455,32 @@ export class CalloutStylePopover {
 	}
 }
 
+let activeCalloutStylePopoverInstance: CalloutStylePopover | null = null;
+
 /**
- * Convenience helper to open the callout style popover
+ * Closes the currently active callout style popover if any is open.
+ */
+export function closeActiveCalloutStylePopover(): void {
+	if (activeCalloutStylePopoverInstance) {
+		const popover = activeCalloutStylePopoverInstance;
+		activeCalloutStylePopoverInstance = null;
+		popover.close();
+	}
+}
+
+/**
+ * Convenience helper to open the callout style popover.
+ * Automatically closes any previously active popover instance first.
  */
 export function openCalloutStylePopover(
 	options: CalloutStylePopoverOptions,
 ): CalloutStylePopover {
-	return new CalloutStylePopover(options);
+	if (activeCalloutStylePopoverInstance) {
+		const popover = activeCalloutStylePopoverInstance;
+		activeCalloutStylePopoverInstance = null;
+		popover.close();
+	}
+	const newPopover = new CalloutStylePopover(options);
+	activeCalloutStylePopoverInstance = newPopover;
+	return newPopover;
 }

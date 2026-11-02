@@ -36,18 +36,18 @@ export function isTabSubheaderLine(
 	}
 	const pipeTitle = (match[1] ?? '').trim();
 	const spaceTitle = (match[2] ?? '').trim();
-	const title = pipeTitle || spaceTitle || 'Onglet';
+	const title = spaceTitle || pipeTitle || 'Onglet';
 	return { isTab: true, title };
 }
 
 /**
- * Cleans and sanitizes a tab title so it does not contain syntax delimiters (`[`, `]`, `|`, `\n`).
+ * Cleans and sanitizes a tab title so it fits on a single callout header line.
+ * Preserves accents, quotes, punctuation, brackets, pipes, and special characters.
  */
 export function sanitizeTabTitle(title: string): string {
 	const sanitized = title
-		.replace(/[\r\n]/g, ' ')
-		.replace(/[\][|]/g, '')
-		.replace(/\s+/g, ' ')
+		.replace(/[\r\n]+/g, ' ')
+		.replace(/[ \t]+/g, ' ')
 		.trim();
 	return sanitized || 'Onglet';
 }
@@ -163,7 +163,7 @@ export function serializeTabsMarkdown(
 	for (let t = 0; t < safeTabs.length; t++) {
 		const tab = safeTabs[t]!;
 		const safeTitle = sanitizeTabTitle(tab.title);
-		lines.push(`> > [!tab|${safeTitle}]`);
+		lines.push(`> > [!tab] ${safeTitle}`);
 
 		const bodyText = tab.text ?? '';
 		const bodyLines = bodyText.split('\n');

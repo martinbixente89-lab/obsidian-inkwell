@@ -2432,14 +2432,39 @@ body.inkwell-page-full-width .workspace-leaf-content[data-type="markdown"] .mark
 }
 
 .cm-line.inkwell-col-callout-header {
+	position: relative;
 	background-color: var(--background-secondary-alt, var(--background-secondary));
 	border-top-left-radius: 8px;
 	border-top-right-radius: 8px;
 	border-left: 1px solid var(--background-modifier-border);
 	border-right: 1px solid var(--background-modifier-border);
 	border-top: 1px solid var(--background-modifier-border);
-	padding: 8px 12px 2px 12px !important;
+	padding: 8px 36px 2px 12px !important;
 	font-weight: 600;
+}
+
+.inkwell-col-callout-actions {
+	position: absolute;
+	top: 4px;
+	right: 6px;
+	z-index: 15;
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	opacity: 0;
+	transition: opacity 0.15s ease;
+	user-select: none;
+}
+
+.cm-line.inkwell-col-callout-header:hover .inkwell-col-callout-actions,
+.cm-line.inkwell-col-callout-header:focus-within .inkwell-col-callout-actions,
+.cm-line.inkwell-col-callout-header.is-callout-hovered .inkwell-col-callout-actions,
+.inkwell-col-callout-actions.has-open-menu {
+	opacity: 0.85;
+}
+
+.inkwell-col-callout-actions:hover {
+	opacity: 1 !important;
 }
 
 .inkwell-col-callout-badge {

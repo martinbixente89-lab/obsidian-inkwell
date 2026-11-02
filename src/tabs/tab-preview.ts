@@ -56,14 +56,14 @@ export function harmonizeTabsPreview(
 
 		// Extract tab titles
 		const tabTitles: string[] = tabElements.map((el, idx) => {
-			const meta = el.getAttribute('data-callout-metadata');
-			if (meta && meta.trim().length > 0) {
-				return sanitizeTabTitle(meta);
-			}
 			const titleInner = el.querySelector('.callout-title-inner');
 			const titleText = titleInner?.textContent?.trim();
 			if (titleText && titleText.toLowerCase() !== 'tab') {
 				return sanitizeTabTitle(titleText);
+			}
+			const meta = el.getAttribute('data-callout-metadata');
+			if (meta && meta.trim().length > 0) {
+				return sanitizeTabTitle(meta);
 			}
 			return `Onglet ${idx + 1}`;
 		});

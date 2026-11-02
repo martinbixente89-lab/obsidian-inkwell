@@ -29,7 +29,12 @@ import {
 	VisualMediaEmbedWidget,
 	VisualTableWidget,
 } from '../blocks/visual-embed-widgets';
-import { parseCalloutMetadata } from '../blocks/callout-parser';
+import {
+	CalloutCustomStyle,
+	parseCalloutMetadata,
+	serializeCalloutMetadata,
+} from '../blocks/callout-parser';
+import { openCalloutStylePopover } from '../blocks/callout-style-popover';
 
 const HIDE_SYNTAX = Decoration.replace({});
 let activeVisualDecoPlugin: InkwellPlugin | null = null;
@@ -228,6 +233,210 @@ class CalloutBadgeWidget extends WidgetType {
 
 	eq(other: CalloutBadgeWidget): boolean {
 		return other.calloutType === this.calloutType;
+	}
+}
+
+function registerCalloutHoverListener(editorDom: HTMLElement): void {
+	if (
+		(editorDom as unknown as { _inkwellCalloutHoverBound?: boolean })
+			._inkwellCalloutHoverBound
+	) {
+		return;
+	}
+	(
+		editorDom as unknown as { _inkwellCalloutHoverBound?: boolean }
+	)._inkwellCalloutHoverBound = true;
+
+	editorDom.addEventListener('mouseover', (e) => {
+		const target = e.target as HTMLElement | null;
+		const line = target?.closest('.cm-line') as HTMLElement | null;
+		if (!line) return;
+		if (line.classList.contains('inkwell-col-callout-body')) {
+			let prev = line.previousElementSibling as HTMLElement | null;
+			while (prev && prev.classList.contains('inkwell-col-callout-body')) {
+				prev = prev.previousElementSibling as HTMLElement | null;
+			}
+			if (prev && prev.classList.contains('inkwell-col-callout-header')) {
+				prev.classList.add('is-callout-hovered');
+			}
+		}
+	});
+
+	editorDom.addEventListener('mouseout', (e) => {
+		const target = e.target as HTMLElement | null;
+		const line = target?.closest('.cm-line') as HTMLElement | null;
+		if (!line) return;
+		if (line.classList.contains('inkwell-col-callout-body')) {
+			let prev = line.previousElementSibling as HTMLElement | null;
+			while (prev && prev.classList.contains('inkwell-col-callout-body')) {
+				prev = prev.previousElementSibling as HTMLElement | null;
+			}
+			if (prev && prev.classList.contains('inkwell-col-callout-header')) {
+				prev.classList.remove('is-callout-hovered');
+			}
+		}
+	});
+}
+
+class ColumnCalloutActionsWidget extends WidgetType {
+	constructor(
+		private readonly lineNumber: number,
+		private readonly calloutType: string,
+		private readonly metaStr: string,
+	) {
+		super();
+	}
+
+	eq(other: ColumnCalloutActionsWidget): boolean {
+		return (
+			other.lineNumber === this.lineNumber &&
+			other.calloutType === this.calloutType &&
+			other.metaStr === this.metaStr
+		);
+	}
+
+	toDOM(view: EditorView): HTMLElement {
+		registerCalloutHoverListener(view.dom);
+
+		const wrap = document.createElement('span');
+		wrap.className = 'inkwell-col-callout-actions';
+		wrap.contentEditable = 'false';
+
+		// Stop pointerdown and mousedown so editor selection / cursor does not jump to line.to
+		const stopEvent = (e: Event) => {
+			e.preventDefault();
+			e.stopPropagation();
+		};
+		wrap.addEventListener('pointerdown', stopEvent);
+		wrap.addEventListener('mousedown', stopEvent);
+
+		const btn = document.createElement('button');
+		btn.type = 'button';
+		btn.className = 'inkwell-visual-callout-settings-btn';
+		btn.title = 'Personnaliser l’apparence de l’encadré';
+		btn.setAttribute('aria-label', btn.title);
+		setIcon(btn, 'settings');
+
+		btn.addEventListener('click', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			this.openPopover(btn, view, wrap);
+		});
+
+		wrap.appendChild(btn);
+		return wrap;
+	}
+
+	ignoreEvent(): boolean {
+		return false;
+	}
+
+	private openPopover(
+		anchorEl: HTMLElement,
+		view: EditorView,
+		wrap: HTMLElement,
+	): void {
+		const initialStyle = parseCalloutMetadata(this.metaStr);
+		let previewActive = false;
+
+		const headerEl = wrap.closest<HTMLElement>('.cm-line');
+		const parentContainer = headerEl?.parentElement;
+		const bodyEls: HTMLElement[] = [];
+		if (headerEl && parentContainer) {
+			let next = headerEl.nextElementSibling as HTMLElement | null;
+			while (next && next.classList.contains('inkwell-col-callout-body')) {
+				bodyEls.push(next);
+				next = next.nextElementSibling as HTMLElement | null;
+			}
+		}
+
+		const applyPreview = (style: CalloutCustomStyle | undefined) => {
+			previewActive = true;
+			const bg = style?.bg ?? '';
+			const borderNone = style?.border === false;
+			const borderColor = style?.borderColor ?? '';
+
+			const applyTo = (el: HTMLElement) => {
+				const props: Record<string, string> = {};
+				if (bg) {
+					props['--inkwell-callout-bg'] = bg;
+				}
+				if (borderNone) {
+					props['--inkwell-callout-border'] = 'none';
+				} else if (borderColor) {
+					props['--inkwell-callout-border'] = `1px solid ${borderColor}`;
+				}
+				el.setCssProps(props);
+			};
+
+			if (headerEl) applyTo(headerEl);
+			for (const b of bodyEls) applyTo(b);
+		};
+
+		const revertPreview = () => {
+			if (!previewActive) return;
+			applyPreview(initialStyle);
+		};
+
+		wrap.classList.add('has-open-menu');
+
+		openCalloutStylePopover({
+			anchorEl,
+			initialStyle,
+			onPreviewStyle: (style) => {
+				applyPreview(style);
+			},
+			onCommitStyle: (finalStyle) => {
+				wrap.classList.remove('has-open-menu');
+				this.commitStyle(view, wrap, finalStyle);
+			},
+			onClose: () => {
+				wrap.classList.remove('has-open-menu');
+				revertPreview();
+			},
+		});
+	}
+
+	private commitStyle(
+		view: EditorView,
+		wrap: HTMLElement,
+		finalStyle: CalloutCustomStyle | undefined,
+	): void {
+		let line: { from: number; to: number; text: string };
+		try {
+			const pos = view.posAtDOM(wrap);
+			line = view.state.doc.lineAt(pos);
+		} catch {
+			const lineNum = Math.min(
+				Math.max(1, this.lineNumber),
+				view.state.doc.lines,
+			);
+			line = view.state.doc.line(lineNum);
+		}
+
+		const match =
+			/^(\s*>\s*\[!)([a-zA-Z0-9_-]+)(?:\|([^\]]*))?(\].*)$/.exec(line.text);
+		if (!match) return;
+
+		const prefix = match[1]!;
+		const calloutType = match[2]!;
+		const suffix = match[4]!;
+
+		const serialized = serializeCalloutMetadata(finalStyle);
+		const newLineText = serialized
+			? `${prefix}${calloutType}|${serialized}${suffix}`
+			: `${prefix}${calloutType}${suffix}`;
+
+		if (newLineText === line.text) return;
+
+		view.dispatch({
+			changes: {
+				from: line.from,
+				to: line.to,
+				insert: newLineText,
+			},
+			userEvent: 'input.style',
+		});
 	}
 }
 
@@ -717,6 +926,17 @@ function buildColumnMarkdownDecos(state: EditorState): MarkdownDecoSets {
 					atomicEntries.push({
 						from: line.from,
 						to: replaceTo,
+					});
+				}
+
+				if (!isToggle) {
+					lineAndMarkEntries.push({
+						from: line.to,
+						to: line.to,
+						deco: Decoration.widget({
+							widget: new ColumnCalloutActionsWidget(i, calloutType, metaStr),
+							side: 1,
+						}),
 					});
 				}
 			}
