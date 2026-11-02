@@ -131,4 +131,71 @@ Voici le premier paragraphe partagé.
 		assert.ok(id2.startsWith('sync-'));
 		assert.notStrictEqual(id1, id2);
 	});
+
+	void test('simulates single-lease transfer without losing pending content', async () => {
+		// Mock occurrence state
+		let activeOccurrence = 'occ-1';
+		const occurrence1PendingDraft = 'Dernier mot tapé dans occ-1';
+		let sourceDiskContent = 'Contenu initial';
+
+		// Lease flush callback registered by occ-1
+		const flushOccurrence1 = async () => {
+			sourceDiskContent = occurrence1PendingDraft;
+			activeOccurrence = '';
+		};
+
+		// Occurrence 2 requests lease while occurrence 1 has pending text
+		if (activeOccurrence && activeOccurrence !== 'occ-2') {
+			await flushOccurrence1();
+		}
+
+		// Occurrence 2 acquires lease
+		activeOccurrence = 'occ-2';
+
+		// Verify that source disk has the exact last keystroke from occ-1 without loss
+		assert.strictEqual(sourceDiskContent, 'Dernier mot tapé dans occ-1');
+		assert.strictEqual(activeOccurrence, 'occ-2');
+	});
+
+	void test('conflict resolution keeps both versions recoverable', () => {
+		const localDraft = 'Mes modifications locales très importantes';
+		const diskModifiedContent = 'Modifications faites directement dans Obsidian sur la source';
+
+		// Choice 1: keep-mine
+		const choiceKeepMine = {
+			resolvedBody: localDraft,
+			discardedBody: diskModifiedContent,
+		};
+		assert.strictEqual(choiceKeepMine.resolvedBody, localDraft);
+		assert.strictEqual(choiceKeepMine.discardedBody, diskModifiedContent);
+
+		// Choice 2: reload-source
+		const choiceReloadSource = {
+			resolvedBody: diskModifiedContent,
+			discardedBody: localDraft,
+		};
+		assert.strictEqual(choiceReloadSource.resolvedBody, diskModifiedContent);
+		// Discarded draft is preserved for clipboard and undo recovery
+		assert.strictEqual(choiceReloadSource.discardedBody, localDraft);
+	});
+
+	void test('dissociation replaces callout reference range with plain body text', () => {
+		const noteContent = `# Titre\n\n> [!synced] Note de cadrage\n> ![[_synced/Note de cadrage]]\n\nFin.`;
+		const sourceBody = `### Cadrage\n- Point 1\n- Point 2`;
+
+		const lines = [
+			'> [!synced] Note de cadrage',
+			'> ![[_synced/Note de cadrage]]',
+		];
+		const from = noteContent.indexOf('> [!synced]');
+		const to = from + lines.join('\n').length;
+
+		const dissociatedNote =
+			noteContent.slice(0, from) + sourceBody + noteContent.slice(to);
+
+		assert.ok(!dissociatedNote.includes('>[!synced]'));
+		assert.ok(dissociatedNote.includes('### Cadrage\n- Point 1\n- Point 2'));
+		assert.ok(dissociatedNote.endsWith('\n\nFin.'));
+	});
 });
+

@@ -11,6 +11,7 @@ export interface SyncedLeaseInfo {
 	lastSeenMtime: number;
 	hasConflict: boolean;
 	externalDiskContent?: string;
+	flushAndRelease?: () => Promise<void>;
 }
 
 export type SyncedBlockEventListener = (
@@ -23,6 +24,7 @@ export class SyncedBlockManager {
 	private listeners = new Set<SyncedBlockEventListener>();
 	private activeResolutionStack = new Set<string>();
 	private defaultFolder = '_synced';
+	private internalSavePaths = new Set<string>();
 
 	constructor(private plugin: InkwellPlugin) {
 		this.registerVaultListeners();
@@ -60,6 +62,18 @@ export class SyncedBlockManager {
 				if (!(file instanceof TFile) || file.extension !== 'md') return;
 
 				const normPath = this.normalizePath(file.path);
+
+				// Ignore internal saves initiated by Inkwell to prevent false conflicts
+				if (this.internalSavePaths.has(normPath)) {
+					this.internalSavePaths.delete(normPath);
+					const lease = this.leases.get(normPath);
+					if (lease) {
+						lease.lastSeenMtime = file.stat.mtime;
+					}
+					this.notify(normPath, 'modify');
+					return;
+				}
+
 				const lease = this.leases.get(normPath);
 
 				if (lease) {
@@ -160,16 +174,25 @@ export class SyncedBlockManager {
 	/**
 	 * Acquires the single edit lease for a source file.
 	 */
-	public acquireLease(
+	public async acquireLease(
 		sourcePath: string,
 		occurrenceId: string,
 		initialContent: string,
 		mtime: number,
-	): boolean {
+		flushAndRelease?: () => Promise<void>,
+	): Promise<boolean> {
 		const norm = this.normalizePath(sourcePath);
 		const existing = this.leases.get(norm);
 		if (existing && existing.occurrenceId !== occurrenceId) {
-			return false;
+			if (existing.flushAndRelease) {
+				try {
+					await existing.flushAndRelease();
+				} catch (e) {
+					console.error('[Inkwell] Error during lease flush:', e);
+				}
+			} else {
+				return false;
+			}
 		}
 
 		this.leases.set(norm, {
@@ -177,6 +200,7 @@ export class SyncedBlockManager {
 			lastSavedContent: initialContent,
 			lastSeenMtime: mtime,
 			hasConflict: false,
+			flushAndRelease,
 		});
 
 		this.notify(norm, 'lease-change');
@@ -245,14 +269,19 @@ export class SyncedBlockManager {
 
 		const fullMarkdown = formatSourceContent(effectiveSyncId ?? null, bodyText);
 
+		this.internalSavePaths.add(norm);
+		if (lease) {
+			lease.lastSavedContent = bodyText;
+		}
+
 		try {
 			await this.app.vault.modify(file, fullMarkdown);
 			if (lease) {
-				lease.lastSavedContent = bodyText;
 				lease.lastSeenMtime = file.stat.mtime;
 			}
 			return { success: true };
 		} catch (e) {
+			this.internalSavePaths.delete(norm);
 			return {
 				success: false,
 				error: (e as Error).message || 'Échec de l’enregistrement de la source',
@@ -268,27 +297,29 @@ export class SyncedBlockManager {
 		occurrenceId: string,
 		choice: 'keep-mine' | 'reload-source',
 		localDraft: string,
-	): Promise<string> {
+	): Promise<{ resolvedBody: string; discardedBody: string }> {
 		const norm = this.normalizePath(sourcePath);
 		const lease = this.leases.get(norm);
 		const file = this.resolveSourceFile(sourcePath);
 
 		if (!lease || !file) {
-			return localDraft;
+			return { resolvedBody: localDraft, discardedBody: '' };
 		}
 
 		if (choice === 'keep-mine') {
+			const diskRaw = await this.app.vault.read(file);
+			const { body: diskBody } = extractSourceContent(diskRaw);
 			lease.hasConflict = false;
 			await this.saveSource(sourcePath, localDraft);
-			return localDraft;
+			return { resolvedBody: localDraft, discardedBody: diskBody };
 		} else {
 			lease.hasConflict = false;
 			const diskRaw = await this.app.vault.read(file);
-			const { body } = extractSourceContent(diskRaw);
-			lease.lastSavedContent = body;
+			const { body: diskBody } = extractSourceContent(diskRaw);
+			lease.lastSavedContent = diskBody;
 			lease.lastSeenMtime = file.stat.mtime;
 			this.notify(norm, 'modify');
-			return body;
+			return { resolvedBody: diskBody, discardedBody: localDraft };
 		}
 	}
 

@@ -361,11 +361,12 @@ export class VisualSyncedBlockController {
 		const { body } = extractSourceContent(raw);
 		this.lastSavedBody = body;
 
-		const acquired = this.plugin.syncedBlockManager.acquireLease(
+		const acquired = await this.plugin.syncedBlockManager.acquireLease(
 			sourceFile.path,
 			this.occurrenceId,
 			body,
 			sourceFile.stat.mtime,
+			() => this.switchToPreview(),
 		);
 
 		if (!acquired) {
@@ -528,28 +529,48 @@ export class VisualSyncedBlockController {
 			? this.activeEditorView.state.doc.toString()
 			: this.lastSavedBody;
 
-		const resolvedBody = await this.plugin.syncedBlockManager.resolveConflict(
-			this.reference.targetPath,
-			this.occurrenceId,
-			choice,
-			currentDraft,
-		);
+		const { resolvedBody, discardedBody } =
+			await this.plugin.syncedBlockManager.resolveConflict(
+				this.reference.targetPath,
+				this.occurrenceId,
+				choice,
+				currentDraft,
+			);
 
 		this.hideConflictBanner();
 
-		if (this.activeEditorView && choice === 'reload-source') {
-			this.isUpdatingFromParent = true;
-			try {
-				this.activeEditorView.dispatch({
-					changes: {
-						from: 0,
-						to: this.activeEditorView.state.doc.length,
-						insert: resolvedBody,
-					},
-				});
-			} finally {
-				this.isUpdatingFromParent = false;
+		if (choice === 'reload-source') {
+			if (this.activeEditorView) {
+				this.isUpdatingFromParent = true;
+				try {
+					this.activeEditorView.dispatch({
+						changes: {
+							from: 0,
+							to: this.activeEditorView.state.doc.length,
+							insert: resolvedBody,
+						},
+					});
+				} finally {
+					this.isUpdatingFromParent = false;
+				}
 			}
+			// Copy discarded draft to clipboard so user never loses it
+			if (discardedBody) {
+				try {
+					await navigator.clipboard.writeText(discardedBody);
+				} catch {
+					// clipboard fallback
+				}
+			}
+			new Notice(
+				'Version source chargée. Le brouillon local remplacé a été copié dans le presse-papiers pour récupération.',
+				6000,
+			);
+		} else {
+			new Notice(
+				'Votre version a été conservée et enregistrée sur la source. L’ancienne version disque reste consultable dans l’historique des fichiers Obsidian.',
+				6000,
+			);
 		}
 
 		this.updateBadge();
