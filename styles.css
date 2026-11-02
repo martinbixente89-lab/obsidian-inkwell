@@ -3404,3 +3404,262 @@ body.inkwell-page-full-width .workspace-leaf-content[data-type="markdown"] .mark
 	background-color: var(--background-modifier-hover) !important;
 }
 
+/* ==========================================================================
+   Tabbed Blocks (Blocs à onglets) — Live Preview & Reading Mode Parity
+   ========================================================================== */
+
+.inkwell-visual-tabs-root,
+.markdown-rendered .callout.inkwell-tabs-harmonized,
+.markdown-rendered .callout[data-callout="tabs"] {
+	position: relative;
+	margin: 0.75rem 0 !important;
+	border-radius: 8px !important;
+	background-color: var(--background-secondary-alt, var(--background-secondary)) !important;
+	border: 1px solid var(--background-modifier-border) !important;
+	box-shadow: none !important;
+	display: flex !important;
+	flex-direction: column !important;
+	overflow: hidden !important;
+	padding: 0 !important;
+	color: var(--text-normal) !important;
+}
+
+/* Tab bar header */
+.inkwell-tabs-bar,
+.inkwell-reading-tabs-bar {
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	background-color: transparent !important;
+	border-bottom: 1px solid var(--background-modifier-border) !important;
+	padding: 4px 6px !important;
+	gap: 6px !important;
+	user-select: none !important;
+}
+
+/* Horizontal scrollable tab list */
+.inkwell-tabs-list {
+	display: flex !important;
+	align-items: center !important;
+	gap: 4px !important;
+	overflow-x: auto !important;
+	scrollbar-width: none !important;
+	flex: 1 1 auto !important;
+	min-width: 0 !important;
+}
+
+.inkwell-tabs-list::-webkit-scrollbar {
+	display: none !important;
+}
+
+/* Individual tab items */
+.inkwell-tab-item,
+.inkwell-reading-tab-btn {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 4px !important;
+	padding: 4px 10px !important;
+	border-radius: 6px !important;
+	font-size: 13px !important;
+	font-weight: 500 !important;
+	color: var(--text-muted) !important;
+	background: transparent !important;
+	border: none !important;
+	box-shadow: none !important;
+	cursor: pointer !important;
+	transition: background-color 0.15s ease, color 0.15s ease !important;
+	white-space: nowrap !important;
+	user-select: none !important;
+	position: relative !important;
+}
+
+.inkwell-tab-item:hover,
+.inkwell-reading-tab-btn:hover {
+	color: var(--text-normal) !important;
+	background-color: var(--background-modifier-hover) !important;
+}
+
+.inkwell-tab-item.is-active,
+.inkwell-reading-tab-btn.is-active {
+	color: var(--text-normal) !important;
+	background-color: var(--background-primary) !important;
+	font-weight: 600 !important;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Tab item discreet actions on hover / focus */
+.inkwell-tab-item-actions {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 2px !important;
+	opacity: 0 !important;
+	transition: opacity 0.15s ease !important;
+	margin-left: 2px !important;
+}
+
+.inkwell-tab-item:hover .inkwell-tab-item-actions,
+.inkwell-tab-item:focus-within .inkwell-tab-item-actions {
+	opacity: 0.85 !important;
+}
+
+.inkwell-tab-move-btn,
+.inkwell-tab-delete-btn {
+	width: 16px !important;
+	height: 16px !important;
+	padding: 0 !important;
+	border: none !important;
+	background: transparent !important;
+	color: var(--text-muted) !important;
+	cursor: pointer !important;
+	border-radius: 3px !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	box-shadow: none !important;
+}
+
+.inkwell-tab-move-btn:hover,
+.inkwell-tab-delete-btn:hover {
+	color: var(--text-normal) !important;
+	background-color: var(--background-modifier-hover) !important;
+}
+
+.inkwell-tab-delete-btn:hover {
+	color: var(--text-error, #ef4444) !important;
+}
+
+.inkwell-tab-move-btn svg,
+.inkwell-tab-delete-btn svg {
+	width: 12px !important;
+	height: 12px !important;
+}
+
+/* Add Tab button */
+.inkwell-tab-add-btn {
+	width: 24px !important;
+	height: 24px !important;
+	padding: 0 !important;
+	border: none !important;
+	background: transparent !important;
+	color: var(--text-muted) !important;
+	cursor: pointer !important;
+	border-radius: 4px !important;
+	display: inline-flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	flex-shrink: 0 !important;
+	box-shadow: none !important;
+	transition: background-color 0.15s ease, color 0.15s ease !important;
+}
+
+.inkwell-tab-add-btn:hover {
+	color: var(--text-normal) !important;
+	background-color: var(--background-modifier-hover) !important;
+}
+
+.inkwell-tab-add-btn svg {
+	width: 14px !important;
+	height: 14px !important;
+}
+
+/* Inline rename input */
+.inkwell-tab-rename-input {
+	font-size: 13px !important;
+	font-weight: 500 !important;
+	font-family: inherit !important;
+	padding: 1px 5px !important;
+	border: 1px solid var(--interactive-accent) !important;
+	border-radius: 4px !important;
+	background-color: var(--background-primary) !important;
+	color: var(--text-normal) !important;
+	outline: none !important;
+	width: 110px !important;
+	box-sizing: border-box !important;
+}
+
+/* Content Area */
+.inkwell-tabs-content {
+	padding: 10px 14px !important;
+	min-height: 48px !important;
+}
+
+.inkwell-tabs-content .cm-editor {
+	background: transparent !important;
+}
+
+.inkwell-tabs-content .cm-editor .cm-scroller {
+	padding: 0 !important;
+}
+
+/* Tab confirmation dialog */
+.inkwell-tab-confirm-dialog {
+	padding: 8px 12px !important;
+	margin: 6px 8px !important;
+	background-color: var(--background-primary) !important;
+	border: 1px solid var(--background-modifier-border) !important;
+	border-radius: 6px !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 12px !important;
+	font-size: 12px !important;
+	animation: inkwell-fade-in 0.12s ease-out !important;
+}
+
+.inkwell-tab-confirm-msg {
+	color: var(--text-normal) !important;
+	font-weight: 500 !important;
+}
+
+.inkwell-tab-confirm-actions {
+	display: flex !important;
+	align-items: center !important;
+	gap: 6px !important;
+}
+
+.inkwell-tab-confirm-delete {
+	background-color: var(--text-error, #ef4444) !important;
+	color: #fff !important;
+	border: none !important;
+	border-radius: 4px !important;
+	padding: 4px 10px !important;
+	font-size: 12px !important;
+	cursor: pointer !important;
+	font-weight: 500 !important;
+}
+
+.inkwell-tab-confirm-cancel {
+	background-color: transparent !important;
+	color: var(--text-muted) !important;
+	border: 1px solid var(--background-modifier-border) !important;
+	border-radius: 4px !important;
+	padding: 4px 10px !important;
+	font-size: 12px !important;
+	cursor: pointer !important;
+}
+
+.inkwell-tab-confirm-cancel:hover {
+	background-color: var(--background-modifier-hover) !important;
+	color: var(--text-normal) !important;
+}
+
+/* Reading Mode Tab Panes */
+.markdown-rendered .callout.inkwell-tabs-harmonized > .callout-content {
+	padding: 0 !important;
+	margin: 0 !important;
+}
+
+.markdown-rendered .callout.inkwell-tabs-harmonized .callout[data-callout="tab"] {
+	border: none !important;
+	background: transparent !important;
+	box-shadow: none !important;
+	padding: 10px 14px !important;
+	margin: 0 !important;
+	border-radius: 0 !important;
+}
+
+.inkwell-tabs-hidden {
+	display: none !important;
+}
+
+

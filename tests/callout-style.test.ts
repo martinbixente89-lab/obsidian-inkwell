@@ -112,3 +112,4 @@ describe('callout visual style metadata parser & serializer', () => {
 		assert.equal(serialized, initial);
 	});
 });
+

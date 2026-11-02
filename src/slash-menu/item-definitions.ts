@@ -224,6 +224,23 @@ export const SLASH_ITEM_DEFINITIONS: SlashItemDefinition[] = [
 		keywords: ['5 colonnes', 'cinq colonnes', 'colonnes', 'disposition', 'layout', 'columns'],
 	},
 	{
+		id: 'tabs',
+		label: 'Onglets',
+		section: 'advanced',
+		icon: 'panels-top-left',
+		syntax: 'tabs',
+		keywords: [
+			'onglets',
+			'onglet',
+			'tabs',
+			'tab',
+			'volet',
+			'volets',
+			'panneau',
+			'classeur',
+		],
+	},
+	{
 		id: 'math-block',
 		label: 'Équation — bloc entier',
 		section: 'advanced',
@@ -344,6 +361,12 @@ export function getStaticInsertTemplate(id: string): InsertTemplate | null {
 			const sep = '| --- | --- |\n';
 			const data = '|  |  |';
 			return { text: header + sep + data, cursorOffset: header.length + sep.length + 2 };
+		}
+		case 'tabs': {
+			const template =
+				'> [!tabs]\n>\n> > [!tab|Onglet 1]\n> > \n>\n> > [!tab|Onglet 2]\n> > \n';
+			const cursorOffset = '> [!tabs]\n>\n> > [!tab|Onglet 1]\n> > '.length;
+			return { text: template, cursorOffset };
 		}
 		case 'divider':
 			return { text: '---\n', cursorOffset: 4 };

@@ -11,7 +11,8 @@ export type MovableBlockKind =
 	| 'code'
 	| 'table'
 	| 'math'
-	| 'media';
+	| 'media'
+	| 'tabs';
 
 export type UnsupportedReason =
 	| 'frontmatter'
@@ -511,6 +512,31 @@ export function parseDocumentBlocks(docText: string): DocumentBlock[] {
 			continue;
 		}
 
+		// 1b. Tabs container block: > [!tabs...] -> Movable complete tabs block unit
+		if (/^\s*>\s*\[!tabs(?:\|.*)?\]/i.test(line.text)) {
+			const startLine = i;
+			i++;
+			while (i < lines.length && /^\s*>/.test(lines[i]!.text)) {
+				i++;
+			}
+			const endLine = i - 1;
+			const fromOffset = lines[startLine]!.from;
+			const toOffset = lines[endLine]!.to;
+			const rawMd = docText.slice(fromOffset, toOffset);
+
+			blocks.push({
+				id: nextRootId(),
+				kind: 'tabs',
+				location: { scope: 'root', blockIndex: blocks.length },
+				fromLine: startLine,
+				toLine: endLine,
+				fromOffset,
+				toOffset,
+				markdown: rawMd,
+			});
+			continue;
+		}
+
 		// 2. Fenced code block (``` or ~~~) -> Movable complete code block unit
 		const fenceMatch = /^(`{3,}|~{3,})/.exec(trimmed);
 		if (fenceMatch && fenceMatch[1]) {
@@ -700,7 +726,7 @@ export function parseDocumentBlocks(docText: string): DocumentBlock[] {
 			while (i < lines.length) {
 				const nextTrimmed = lines[i]!.text.trim();
 				if (nextTrimmed.length === 0) break;
-				if (/^\s*>\s*\[!(?:multi-column|columns)/i.test(lines[i]!.text)) break;
+				if (/^\s*>\s*\[!(?:multi-column|columns|tabs)/i.test(lines[i]!.text)) break;
 				const nextReason = classifySingleLineUnsupported(nextTrimmed);
 				if (nextReason === unsupportedReason) {
 					i++;
@@ -733,7 +759,7 @@ export function parseDocumentBlocks(docText: string): DocumentBlock[] {
 			const nextTrimmed = nextLine.text.trim();
 			if (nextTrimmed.length === 0) break;
 			if (/^#{1,6}(?:\s|$)/.test(nextLine.text)) break;
-			if (/^\s*>\s*\[!(?:multi-column|columns)/i.test(nextLine.text)) break;
+			if (/^\s*>\s*\[!(?:multi-column|columns|tabs)/i.test(nextLine.text)) break;
 			if (/^(`{3,}|~{3,})/.test(nextTrimmed)) break;
 			if (nextTrimmed.startsWith('$$')) break;
 			if (isHorizontalRuleLine(nextTrimmed)) break;
@@ -803,7 +829,8 @@ export function isMovableBlock(b: DocumentBlock | InnerColumnBlock): b is Movabl
 		b.kind === 'code' ||
 		b.kind === 'table' ||
 		b.kind === 'math' ||
-		b.kind === 'media'
+		b.kind === 'media' ||
+		b.kind === 'tabs'
 	);
 }
 

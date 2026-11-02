@@ -22,6 +22,8 @@ import { CalloutColumnResizer } from './columns/callout-resizer';
 import { createRootVisualMarkdownExtension } from './columns/column-markdown-deco';
 import { createVisualCalloutsExtension } from './blocks/callout-widget';
 import { registerCalloutPreviewManager } from './blocks/callout-preview';
+import { createVisualTabsExtension } from './tabs/tab-widget';
+import { registerTabsPreviewManager } from './tabs/tab-preview';
 import { createBlockGutterExtension } from './blocks/block-gutter-ext';
 
 export default class InkwellPlugin extends Plugin {
@@ -72,6 +74,7 @@ export default class InkwellPlugin extends Plugin {
 			}),
 		);
 		registerCalloutPreviewManager(this);
+		registerTabsPreviewManager(this);
 		this.tagNavigation = new TagNavigationManager(this);
 		this.tagNavigation.setEnabled(
 			this.settings.experimentalTagNavigation,
@@ -88,6 +91,7 @@ export default class InkwellPlugin extends Plugin {
 		this.registerEditorExtension(createColumnKeymapExtension());
 		this.registerEditorExtension(createVisualColumnsExtension(this));
 		this.registerEditorExtension(createVisualCalloutsExtension(this));
+		this.registerEditorExtension(createVisualTabsExtension(this));
 		this.registerEditorExtension(createRootVisualMarkdownExtension(this));
 		this.registerEditorExtension(createBlockGutterExtension(this));
 		this.updateColumnPrototypeBodyClass();

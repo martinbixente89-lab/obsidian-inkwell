@@ -27,7 +27,11 @@ export function isSingleCalloutHeaderLine(lineText: string): boolean {
 	const m = CALLOUT_HEADER_REGEX.exec(lineText);
 	if (!m || !m[2]) return false;
 	const typeLower = m[2].toLowerCase();
-	return typeLower !== 'multi-column' && typeLower !== 'columns';
+	return (
+		typeLower !== 'multi-column' &&
+		typeLower !== 'columns' &&
+		typeLower !== 'tabs'
+	);
 }
 
 /**

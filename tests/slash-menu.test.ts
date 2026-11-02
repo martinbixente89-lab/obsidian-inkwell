@@ -148,14 +148,14 @@ void test('slash menu matcher: protected contexts', () => {
 
 void test('slash menu items: registry count and sections', () => {
 	const items = SLASH_ITEM_DEFINITIONS;
-	assert.strictEqual(items.length, 33);
+	assert.strictEqual(items.length, 34);
 
 	const basicItems = items.filter((i) => i.section === 'basic');
 	const advancedItems = items.filter((i) => i.section === 'advanced');
 	const mediaItems = items.filter((i) => i.section === 'media');
 
 	assert.strictEqual(basicItems.length, 20);
-	assert.strictEqual(advancedItems.length, 8);
+	assert.strictEqual(advancedItems.length, 9);
 	assert.strictEqual(mediaItems.length, 5);
 
 	// Verify required basic items exist

@@ -768,6 +768,8 @@ class BlockGutterViewPlugin {
 				return 'Unité : Équation ($$)';
 			case 'media':
 				return 'Unité : Média intégré';
+			case 'tabs':
+				return 'Unité : Onglets';
 			default:
 				return 'Unité : Paragraphe';
 		}
