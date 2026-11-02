@@ -60,6 +60,9 @@ void test('slash menu matcher: filtering items', () => {
 	const colsResults = filterSlashItems(items, '3 colonnes');
 	assert.ok(colsResults.some((i) => i.id === 'cols-3'));
 
+	const bookmarkResults = filterSlashItems(items, 'bookmark');
+	assert.ok(bookmarkResults.some((i) => i.id === 'bookmark-card'));
+
 	// Unknown query
 	const unknownResults = filterSlashItems(items, 'inexistant-xyz');
 	assert.strictEqual(unknownResults.length, 0);
@@ -148,14 +151,14 @@ void test('slash menu matcher: protected contexts', () => {
 
 void test('slash menu items: registry count and sections', () => {
 	const items = SLASH_ITEM_DEFINITIONS;
-	assert.strictEqual(items.length, 35);
+	assert.strictEqual(items.length, 36);
 
 	const basicItems = items.filter((i) => i.section === 'basic');
 	const advancedItems = items.filter((i) => i.section === 'advanced');
 	const mediaItems = items.filter((i) => i.section === 'media');
 
 	assert.strictEqual(basicItems.length, 20);
-	assert.strictEqual(advancedItems.length, 10);
+	assert.strictEqual(advancedItems.length, 11);
 	assert.strictEqual(mediaItems.length, 5);
 
 	// Verify required basic items exist
@@ -191,6 +194,7 @@ void test('slash menu items: registry count and sections', () => {
 	assert.ok(advancedIds.includes('mermaid-block'));
 	assert.ok(advancedIds.includes('toc'));
 	assert.ok(advancedIds.includes('toc-static'));
+	assert.ok(advancedIds.includes('bookmark-card'));
 
 	// Verify required media items exist
 	const mediaIds = mediaItems.map((i) => i.id);

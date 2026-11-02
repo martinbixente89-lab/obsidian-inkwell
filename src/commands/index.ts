@@ -21,6 +21,7 @@ import {
 } from './font-family';
 import { toggleSelectionFormat } from './inline-format';
 import { SyncedBlockModal } from '../synced/synced-modal';
+import { BookmarkModal } from '../bookmark/bookmark-modal';
 
 /** Registers all Inkwell commands. IDs are stable: never rename them. */
 export function registerCommands(
@@ -296,6 +297,19 @@ export function registerCommands(
 		editorCallback: (editor) => {
 			const modal = new SyncedBlockModal(plugin.app, plugin, {
 				onInsert: (markdown) => {
+					editor.replaceSelection(markdown + '\n');
+				},
+			});
+			modal.open();
+		},
+	});
+
+	plugin.addCommand({
+		id: 'insert-bookmark-card',
+		name: 'Insérer un aperçu de lien Web',
+		editorCallback: (editor) => {
+			const modal = new BookmarkModal(plugin.app, {
+				onSave: (_data, markdown) => {
 					editor.replaceSelection(markdown + '\n');
 				},
 			});

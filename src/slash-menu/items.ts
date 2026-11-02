@@ -12,6 +12,7 @@ import { NoteSuggestModal, VaultFileSuggestModal } from './modals';
 import { PageModal } from './page-modal';
 import { generateActiveNoteToc } from './toc-helper';
 import { SyncedBlockModal } from '../synced/synced-modal';
+import { BookmarkModal } from '../bookmark/bookmark-modal';
 import {
 	getStaticInsertTemplate,
 	SLASH_ITEM_DEFINITIONS,
@@ -295,6 +296,18 @@ export function createSlashMenuItems(): SlashMenuItem[] {
 
 						const modal = new SyncedBlockModal(ctx.plugin.app, ctx.plugin, {
 							onInsert: (markdown) => {
+								replaceSlashAndInsert(ctx.view, ctx.from, ctx.to, markdown + '\n');
+							},
+						});
+						modal.open();
+					},
+				};
+			case 'bookmark-card':
+				return {
+					...def,
+					execute: (ctx) => {
+						const modal = new BookmarkModal(ctx.plugin.app, {
+							onSave: (_data, markdown) => {
 								replaceSlashAndInsert(ctx.view, ctx.from, ctx.to, markdown + '\n');
 							},
 						});

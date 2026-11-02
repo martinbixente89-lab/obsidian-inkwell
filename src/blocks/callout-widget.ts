@@ -33,6 +33,7 @@ import {
 	CalloutStylePopover,
 	openCalloutStylePopover,
 } from './callout-style-popover';
+import { createVisualBookmarkExtension } from '../bookmark/bookmark-widget';
 import {
 	isOffsetInFoldedHeadingSection,
 	onHeadingFoldChange,
@@ -532,6 +533,7 @@ export class VisualCalloutController {
 				}),
 				createColumnVisualMarkdownExtension(),
 				createSlashMenuExtension(this.plugin),
+				createVisualBookmarkExtension(this.plugin),
 				Prec.highest(
 					keymap.of([
 						{
@@ -1068,8 +1070,8 @@ function buildCalloutDecorations(
 		const line = doc.line(i);
 		const lineText = line.text;
 
-		// Skip multi-column, tabs, and synced callout blocks altogether
-		if (/^\s*>\s*\[!(?:multi-column|columns|tabs|synced)(?:\|.*)?\]/i.test(lineText)) {
+		// Skip multi-column, tabs, synced, and bookmark callout blocks altogether
+		if (/^\s*>\s*\[!(?:multi-column|columns|tabs|synced|bookmark)(?:\|.*)?\]/i.test(lineText)) {
 			i++;
 			while (i <= doc.lines && /^\s*>/.test(doc.line(i).text)) {
 				i++;
