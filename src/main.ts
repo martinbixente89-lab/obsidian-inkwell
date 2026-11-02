@@ -21,6 +21,7 @@ import { createColumnKeymapExtension } from './columns/callout-keymap';
 import { CalloutColumnResizer } from './columns/callout-resizer';
 import { createRootVisualMarkdownExtension } from './columns/column-markdown-deco';
 import { createVisualCalloutsExtension } from './blocks/callout-widget';
+import { registerCalloutPreviewManager } from './blocks/callout-preview';
 import { createBlockGutterExtension } from './blocks/block-gutter-ext';
 
 export default class InkwellPlugin extends Plugin {
@@ -49,7 +50,7 @@ export default class InkwellPlugin extends Plugin {
 
 		registerLivePreviewExtension(this);
 		this.calloutResizer = new CalloutColumnResizer(this.app);
-		this.registerMarkdownPostProcessor((el) => {
+		this.registerMarkdownPostProcessor((el, ctx) => {
 			const spans = el.querySelectorAll('span[data-inkwell], span[style*="background-color"]');
 			spans.forEach((span) => {
 				if (span instanceof HTMLElement) {
@@ -70,6 +71,7 @@ export default class InkwellPlugin extends Plugin {
 				this.calloutResizer.attachResizers(document.body);
 			}),
 		);
+		registerCalloutPreviewManager(this);
 		this.tagNavigation = new TagNavigationManager(this);
 		this.tagNavigation.setEnabled(
 			this.settings.experimentalTagNavigation,

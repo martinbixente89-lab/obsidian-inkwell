@@ -14,7 +14,7 @@ import {
 	keymap,
 	WidgetType,
 } from '@codemirror/view';
-import { editorLivePreviewField } from 'obsidian';
+import { editorLivePreviewField, setIcon } from 'obsidian';
 import type InkwellPlugin from '../main';
 import {
 	getStateHeadingFoldSnapshot,
@@ -213,12 +213,15 @@ class CalloutBadgeWidget extends WidgetType {
 		const badge = document.createElement('span');
 		badge.className = 'inkwell-col-callout-badge';
 		const lower = this.calloutType.toLowerCase();
-		badge.textContent =
-			lower === 'warning' || lower === 'caution'
-				? '⚠ '
-				: lower === 'tip' || lower === 'hint'
-					? '💡 '
-					: 'ℹ ';
+		if (lower === 'note') {
+			setIcon(badge, 'message-square');
+		} else if (lower === 'warning' || lower === 'caution') {
+			badge.textContent = '⚠ ';
+		} else if (lower === 'tip' || lower === 'hint') {
+			badge.textContent = '💡 ';
+		} else {
+			badge.textContent = 'ℹ ';
+		}
 		return badge;
 	}
 
