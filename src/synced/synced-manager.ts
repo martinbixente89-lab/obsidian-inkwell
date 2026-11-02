@@ -1,4 +1,4 @@
-import { App, TFile, TFolder } from 'obsidian';
+import { App, TFile } from 'obsidian';
 import type InkwellPlugin from '../main';
 import {
 	extractSourceContent,
@@ -12,6 +12,15 @@ export interface SyncedLeaseInfo {
 	hasConflict: boolean;
 	externalDiskContent?: string;
 	flushAndRelease?: () => Promise<void>;
+}
+
+export interface ConflictRecoveryResult {
+	success: boolean;
+	resolvedBody: string;
+	discardedBody: string;
+	localBackupPath?: string;
+	sourceBackupPath?: string;
+	error?: string;
 }
 
 export type SyncedBlockEventListener = (
@@ -290,50 +299,151 @@ export class SyncedBlockManager {
 	}
 
 	/**
-	 * Explicitly resolves an active conflict.
+	 * Explicitly resolves an active conflict with durable recovery snapshots.
 	 */
 	public async resolveConflict(
 		sourcePath: string,
 		occurrenceId: string,
 		choice: 'keep-mine' | 'reload-source',
 		localDraft: string,
-	): Promise<{ resolvedBody: string; discardedBody: string }> {
+	): Promise<ConflictRecoveryResult> {
 		const norm = this.normalizePath(sourcePath);
 		const lease = this.leases.get(norm);
 		const file = this.resolveSourceFile(sourcePath);
 
 		if (!lease || !file) {
-			return { resolvedBody: localDraft, discardedBody: '' };
+			return {
+				success: false,
+				resolvedBody: localDraft,
+				discardedBody: '',
+				error: 'Bail ou note source introuvable.',
+			};
 		}
 
-		if (choice === 'keep-mine') {
+		// Read current source content from disk
+		let diskBody = '';
+		try {
 			const diskRaw = await this.app.vault.read(file);
-			const { body: diskBody } = extractSourceContent(diskRaw);
+			diskBody = extractSourceContent(diskRaw).body;
+		} catch (e) {
+			return {
+				success: false,
+				resolvedBody: localDraft,
+				discardedBody: '',
+				error: `Lecture de la source impossible : ${(e as Error).message}`,
+			};
+		}
+
+		// Prepare recovery snapshots in _synced/conflits/
+		const folder = `${this.defaultFolder}/conflits`;
+		const now = new Date();
+		const pad = (n: number) => n.toString().padStart(2, '0');
+		const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}h${pad(now.getMinutes())}m${pad(now.getSeconds())}s`;
+		const baseName = file.basename.replace(/[/\\:*?"<>|]/g, '-');
+
+		let localBackupPath = '';
+		let sourceBackupPath = '';
+
+		try {
+			await this.ensureFolderExists(folder);
+
+			localBackupPath = await this.getUniqueSourcePath(
+				`${baseName}-brouillon-local-${dateStr}`,
+				folder,
+			);
+			sourceBackupPath = await this.getUniqueSourcePath(
+				`${baseName}-version-source-${dateStr}`,
+				folder,
+			);
+
+			const localHeader =
+				`---\ninkwell-recup-type: brouillon-local\ninkwell-source-fichier: "${file.path}"\ndate-recup: "${now.toISOString()}"\n---\n` +
+				`# Récupération de conflit — Brouillon local\n` +
+				`- Source : [[${file.path}]]\n` +
+				`- Date : ${now.toLocaleString()}\n` +
+				`- Choix appliqué : ${choice === 'keep-mine' ? 'Conserver ma version' : 'Charger la version source'}\n\n` +
+				`---\n\n`;
+
+			const sourceHeader =
+				`---\ninkwell-recup-type: version-source\ninkwell-source-fichier: "${file.path}"\ndate-recup: "${now.toISOString()}"\n---\n` +
+				`# Récupération de conflit — Version source (disque)\n` +
+				`- Source : [[${file.path}]]\n` +
+				`- Date : ${now.toLocaleString()}\n` +
+				`- Choix appliqué : ${choice === 'keep-mine' ? 'Conserver ma version' : 'Charger la version source'}\n\n` +
+				`---\n\n`;
+
+			// Create both recovery snapshot files and confirm their existence on disk
+			await this.app.vault.create(localBackupPath, localHeader + localDraft);
+			await this.app.vault.create(sourceBackupPath, sourceHeader + diskBody);
+
+			const checkLocal = this.app.vault.getAbstractFileByPath(localBackupPath);
+			const checkSource = this.app.vault.getAbstractFileByPath(sourceBackupPath);
+			if (!checkLocal || !checkSource) {
+				throw new Error('Les fichiers de sauvegarde n’ont pas pu être confirmés sur le disque.');
+			}
+		} catch (e) {
+			// CRITICAL: If backup fails, DO NOT OVERWRITE! Keep conflict state open!
+			console.error('[Inkwell] Échec de la sauvegarde de récupération:', e);
+			return {
+				success: false,
+				resolvedBody: localDraft,
+				discardedBody: diskBody,
+				error: `Échec de l’enregistrement de sécurité : ${(e as Error).message}. Le remplacement est annulé et le conflit reste ouvert pour préserver vos données.`,
+			};
+		}
+
+		// Recovery files confirmed on disk. Now proceed with applying the chosen resolution:
+		if (choice === 'keep-mine') {
 			lease.hasConflict = false;
-			await this.saveSource(sourcePath, localDraft);
-			return { resolvedBody: localDraft, discardedBody: diskBody };
+			const saveRes = await this.saveSource(sourcePath, localDraft);
+			if (!saveRes.success) {
+				return {
+					success: false,
+					resolvedBody: localDraft,
+					discardedBody: diskBody,
+					localBackupPath,
+					sourceBackupPath,
+					error: saveRes.error,
+				};
+			}
+			return {
+				success: true,
+				resolvedBody: localDraft,
+				discardedBody: diskBody,
+				localBackupPath,
+				sourceBackupPath,
+			};
 		} else {
 			lease.hasConflict = false;
-			const diskRaw = await this.app.vault.read(file);
-			const { body: diskBody } = extractSourceContent(diskRaw);
 			lease.lastSavedContent = diskBody;
 			lease.lastSeenMtime = file.stat.mtime;
 			this.notify(norm, 'modify');
-			return { resolvedBody: diskBody, discardedBody: localDraft };
+			return {
+				success: true,
+				resolvedBody: diskBody,
+				discardedBody: localDraft,
+				localBackupPath,
+				sourceBackupPath,
+			};
 		}
 	}
 
 	/**
-	 * Ensures the destination folder exists, creating it only when explicitly needed.
+	 * Ensures the destination folder exists recursively, creating it only when explicitly needed.
 	 */
 	public async ensureFolderExists(folderPath: string): Promise<void> {
 		const clean = folderPath.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
 		if (!clean) return;
 
-		const existing = this.app.vault.getAbstractFileByPath(clean);
-		if (existing instanceof TFolder) return;
-
-		await this.app.vault.createFolder(clean);
+		const parts = clean.split('/');
+		let current = '';
+		for (const part of parts) {
+			current = current ? `${current}/${part}` : part;
+			const existing = this.app.vault.getAbstractFileByPath(current);
+			if (!existing) {
+				await this.app.vault.createFolder(current);
+			}
+		}
 	}
 
 	/**

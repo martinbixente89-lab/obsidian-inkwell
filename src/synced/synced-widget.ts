@@ -529,13 +529,21 @@ export class VisualSyncedBlockController {
 			? this.activeEditorView.state.doc.toString()
 			: this.lastSavedBody;
 
-		const { resolvedBody, discardedBody } =
-			await this.plugin.syncedBlockManager.resolveConflict(
-				this.reference.targetPath,
-				this.occurrenceId,
-				choice,
-				currentDraft,
+		const result = await this.plugin.syncedBlockManager.resolveConflict(
+			this.reference.targetPath,
+			this.occurrenceId,
+			choice,
+			currentDraft,
+		);
+
+		if (!result.success) {
+			new Notice(
+				result.error ||
+					'Échec de la sauvegarde de récupération. Le conflit reste actif pour protéger vos données.',
+				8000,
 			);
+			return;
+		}
 
 		this.hideConflictBanner();
 
@@ -547,32 +555,32 @@ export class VisualSyncedBlockController {
 						changes: {
 							from: 0,
 							to: this.activeEditorView.state.doc.length,
-							insert: resolvedBody,
+							insert: result.resolvedBody,
 						},
 					});
 				} finally {
 					this.isUpdatingFromParent = false;
 				}
 			}
-			// Copy discarded draft to clipboard so user never loses it
-			if (discardedBody) {
+			// Copy discarded draft to clipboard as complementary convenience
+			if (result.discardedBody) {
 				try {
-					await navigator.clipboard.writeText(discardedBody);
+					await navigator.clipboard.writeText(result.discardedBody);
 				} catch {
 					// clipboard fallback
 				}
 			}
-			new Notice(
-				'Version source chargée. Le brouillon local remplacé a été copié dans le presse-papiers pour récupération.',
-				6000,
-			);
-		} else {
-			new Notice(
-				'Votre version a été conservée et enregistrée sur la source. L’ancienne version disque reste consultable dans l’historique des fichiers Obsidian.',
-				6000,
-			);
 		}
 
+		const actionLabel =
+			choice === 'keep-mine' ? 'Brouillon local conservé' : 'Version source rechargée';
+		const noticeMsg =
+			`Conflit résolu (${actionLabel}).\n` +
+			`Deux sauvegardes créées dans ${this.plugin.syncedBlockManager.getDefaultFolder()}/conflits/ :\n` +
+			`• ${result.localBackupPath}\n` +
+			`• ${result.sourceBackupPath}`;
+
+		new Notice(noticeMsg, 10000);
 		this.updateBadge();
 	}
 

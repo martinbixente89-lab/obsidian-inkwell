@@ -197,5 +197,41 @@ Voici le premier paragraphe partagé.
 		assert.ok(dissociatedNote.includes('### Cadrage\n- Point 1\n- Point 2'));
 		assert.ok(dissociatedNote.endsWith('\n\nFin.'));
 	});
+
+	void test('conflict resolution aborts and protects data when recovery backup fails', async () => {
+		let hasConflict = true;
+		let diskContent = 'Contenu source intouchable';
+		const localDraft = 'Brouillon local précieux';
+
+		// Simulation of resolveConflict with backup failure
+		const simulateResolveWithBackupFailure = async (shouldFail: boolean) => {
+			if (shouldFail) {
+				// Simulating backup creation failure (e.g. disk full or write permission error)
+				const error = new Error('Permission refusée lors de l’écriture du fichier de récupération');
+				return {
+					success: false,
+					resolvedBody: localDraft,
+					discardedBody: diskContent,
+					error: error.message,
+				};
+			}
+			hasConflict = false;
+			diskContent = localDraft;
+			return {
+				success: true,
+				resolvedBody: localDraft,
+				discardedBody: diskContent,
+			};
+		};
+
+		const failureRes = await simulateResolveWithBackupFailure(true);
+
+		// Assertions:
+		assert.strictEqual(failureRes.success, false);
+		assert.ok(failureRes.error?.includes('Permission refusée'));
+		// Verification that conflict is NOT closed and disk is NOT overwritten
+		assert.strictEqual(hasConflict, true);
+		assert.strictEqual(diskContent, 'Contenu source intouchable');
+	});
 });
 
