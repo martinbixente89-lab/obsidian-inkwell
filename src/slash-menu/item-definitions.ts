@@ -278,6 +278,23 @@ export const SLASH_ITEM_DEFINITIONS: SlashItemDefinition[] = [
 		],
 	},
 	{
+		id: 'action-button',
+		label: 'Bouton',
+		section: 'advanced',
+		icon: 'play',
+		syntax: 'button',
+		keywords: [
+			'bouton',
+			'button',
+			'action',
+			'declencheur',
+			'déclencheur',
+			'commande',
+			'note',
+			'lien',
+		],
+	},
+	{
 		id: 'math-block',
 		label: 'Équation — bloc entier',
 		section: 'advanced',

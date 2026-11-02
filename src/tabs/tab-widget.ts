@@ -23,6 +23,7 @@ import { closeActiveCalloutStylePopover } from '../blocks/callout-style-popover'
 import { minimalDiff } from '../utils/text-diff';
 import { createColumnVisualMarkdownExtension } from '../columns/column-markdown-deco';
 import { createVisualBookmarkExtension } from '../bookmark/bookmark-widget';
+import { createVisualButtonExtension } from '../button/button-widget';
 import { localOffsetToParentOffset } from '../columns/parser';
 import {
 	addTab,
@@ -325,6 +326,7 @@ export class VisualTabsController {
 				createColumnVisualMarkdownExtension(),
 				createSlashMenuExtension(this.plugin),
 				createVisualBookmarkExtension(this.plugin),
+				createVisualButtonExtension(this.plugin, true),
 				keymap.of([
 					{
 						key: 'Mod-z',

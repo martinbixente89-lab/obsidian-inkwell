@@ -30,6 +30,8 @@ import { createVisualSyncedExtension } from './synced/synced-widget';
 import { registerSyncedPreviewPostProcessor } from './synced/synced-preview';
 import { createVisualBookmarkExtension } from './bookmark/bookmark-widget';
 import { registerBookmarkPostProcessor } from './bookmark/bookmark-preview';
+import { createVisualButtonExtension } from './button/button-widget';
+import { registerButtonPostProcessor } from './button/button-preview';
 
 export default class InkwellPlugin extends Plugin {
 	settings!: InkwellSettings;
@@ -83,6 +85,7 @@ export default class InkwellPlugin extends Plugin {
 		registerTabsPreviewManager(this);
 		registerSyncedPreviewPostProcessor(this);
 		registerBookmarkPostProcessor(this);
+		registerButtonPostProcessor(this);
 		this.syncedBlockManager = new SyncedBlockManager(this);
 		this.tagNavigation = new TagNavigationManager(this);
 		this.tagNavigation.setEnabled(
@@ -103,6 +106,7 @@ export default class InkwellPlugin extends Plugin {
 		this.registerEditorExtension(createVisualTabsExtension(this));
 		this.registerEditorExtension(createVisualSyncedExtension(this));
 		this.registerEditorExtension(createVisualBookmarkExtension(this));
+		this.registerEditorExtension(createVisualButtonExtension(this, false));
 		this.registerEditorExtension(createRootVisualMarkdownExtension(this));
 		this.registerEditorExtension(createBlockGutterExtension(this));
 		this.updateColumnPrototypeBodyClass();

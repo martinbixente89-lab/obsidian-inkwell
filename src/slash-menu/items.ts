@@ -13,6 +13,7 @@ import { PageModal } from './page-modal';
 import { generateActiveNoteToc } from './toc-helper';
 import { SyncedBlockModal } from '../synced/synced-modal';
 import { BookmarkModal } from '../bookmark/bookmark-modal';
+import { ButtonModal } from '../button/button-modal';
 import {
 	getStaticInsertTemplate,
 	SLASH_ITEM_DEFINITIONS,
@@ -307,6 +308,18 @@ export function createSlashMenuItems(): SlashMenuItem[] {
 					...def,
 					execute: (ctx) => {
 						const modal = new BookmarkModal(ctx.plugin.app, {
+							onSave: (_data, markdown) => {
+								replaceSlashAndInsert(ctx.view, ctx.from, ctx.to, markdown + '\n');
+							},
+						});
+						modal.open();
+					},
+				};
+			case 'action-button':
+				return {
+					...def,
+					execute: (ctx) => {
+						const modal = new ButtonModal(ctx.plugin.app, {
 							onSave: (_data, markdown) => {
 								replaceSlashAndInsert(ctx.view, ctx.from, ctx.to, markdown + '\n');
 							},

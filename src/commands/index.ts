@@ -22,6 +22,7 @@ import {
 import { toggleSelectionFormat } from './inline-format';
 import { SyncedBlockModal } from '../synced/synced-modal';
 import { BookmarkModal } from '../bookmark/bookmark-modal';
+import { ButtonModal } from '../button/button-modal';
 
 /** Registers all Inkwell commands. IDs are stable: never rename them. */
 export function registerCommands(
@@ -309,6 +310,19 @@ export function registerCommands(
 		name: 'Insérer un aperçu de lien Web',
 		editorCallback: (editor) => {
 			const modal = new BookmarkModal(plugin.app, {
+				onSave: (_data, markdown) => {
+					editor.replaceSelection(markdown + '\n');
+				},
+			});
+			modal.open();
+		},
+	});
+
+	plugin.addCommand({
+		id: 'insert-action-button',
+		name: 'Insérer un bouton d’action',
+		editorCallback: (editor) => {
+			const modal = new ButtonModal(plugin.app, {
 				onSave: (_data, markdown) => {
 					editor.replaceSelection(markdown + '\n');
 				},

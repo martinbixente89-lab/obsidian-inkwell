@@ -23,6 +23,7 @@ import {
 import { createColumnVisualMarkdownExtension } from './column-markdown-deco';
 import { closeActiveCalloutStylePopover } from '../blocks/callout-style-popover';
 import { createVisualBookmarkExtension } from '../bookmark/bookmark-widget';
+import { createVisualButtonExtension } from '../button/button-widget';
 import {
 	ColumnLineMapEntry,
 	getBalancedRatios,
@@ -319,6 +320,7 @@ export class ColumnWidgetController {
 				createColumnVisualMarkdownExtension(),
 				createSlashMenuExtension(this.plugin),
 				createVisualBookmarkExtension(this.plugin),
+				createVisualButtonExtension(this.plugin, true),
 				Prec.highest(
 					keymap.of([
 						{
