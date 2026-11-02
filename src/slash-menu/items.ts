@@ -11,6 +11,7 @@ import type { SlashExecutionContext, SlashMenuItem } from './types';
 import { NoteSuggestModal, VaultFileSuggestModal } from './modals';
 import { PageModal } from './page-modal';
 import { generateActiveNoteToc } from './toc-helper';
+import { SyncedBlockModal } from '../synced/synced-modal';
 import {
 	getStaticInsertTemplate,
 	SLASH_ITEM_DEFINITIONS,
@@ -277,6 +278,26 @@ export function createSlashMenuItems(): SlashMenuItem[] {
 								replaceSlashAndInsert(ctx.view, ctx.from, ctx.to, embedText);
 							},
 						);
+						modal.open();
+					},
+				};
+			case 'synced-block':
+				return {
+					...def,
+					execute: (ctx) => {
+						const isInsideSynced =
+							ctx.view.dom.closest('.inkwell-synced-block-root') !== null;
+						if (isInsideSynced) {
+							replaceSlashAndInsert(ctx.view, ctx.from, ctx.to, '', 0);
+							new Notice('L’imbrication de blocs synchronisés n’est pas autorisée.');
+							return;
+						}
+
+						const modal = new SyncedBlockModal(ctx.plugin.app, ctx.plugin, {
+							onInsert: (markdown) => {
+								replaceSlashAndInsert(ctx.view, ctx.from, ctx.to, markdown + '\n');
+							},
+						});
 						modal.open();
 					},
 				};

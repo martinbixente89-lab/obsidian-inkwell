@@ -20,6 +20,7 @@ import {
 	setSelectionFontFamily,
 } from './font-family';
 import { toggleSelectionFormat } from './inline-format';
+import { SyncedBlockModal } from '../synced/synced-modal';
 
 /** Registers all Inkwell commands. IDs are stable: never rename them. */
 export function registerCommands(
@@ -286,6 +287,19 @@ export function registerCommands(
 				plugin.settings.pageWidthMode === 'full' ? 'standard' : 'full';
 			await plugin.saveSettings();
 			plugin.updateColumnPrototypeBodyClass();
+		},
+	});
+
+	plugin.addCommand({
+		id: 'insert-synced-block',
+		name: 'Insérer un bloc synchronisé',
+		editorCallback: (editor) => {
+			const modal = new SyncedBlockModal(plugin.app, plugin, {
+				onInsert: (markdown) => {
+					editor.replaceSelection(markdown + '\n');
+				},
+			});
+			modal.open();
 		},
 	});
 }

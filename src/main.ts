@@ -25,6 +25,9 @@ import { registerCalloutPreviewManager } from './blocks/callout-preview';
 import { createVisualTabsExtension } from './tabs/tab-widget';
 import { registerTabsPreviewManager } from './tabs/tab-preview';
 import { createBlockGutterExtension } from './blocks/block-gutter-ext';
+import { SyncedBlockManager } from './synced/synced-manager';
+import { createVisualSyncedExtension } from './synced/synced-widget';
+import { registerSyncedPreviewPostProcessor } from './synced/synced-preview';
 
 export default class InkwellPlugin extends Plugin {
 	settings!: InkwellSettings;
@@ -33,6 +36,7 @@ export default class InkwellPlugin extends Plugin {
 	editPopover!: EditStyledTextPopover;
 	tagNavigation!: TagNavigationManager;
 	calloutResizer!: CalloutColumnResizer;
+	syncedBlockManager!: SyncedBlockManager;
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
@@ -75,6 +79,8 @@ export default class InkwellPlugin extends Plugin {
 		);
 		registerCalloutPreviewManager(this);
 		registerTabsPreviewManager(this);
+		registerSyncedPreviewPostProcessor(this);
+		this.syncedBlockManager = new SyncedBlockManager(this);
 		this.tagNavigation = new TagNavigationManager(this);
 		this.tagNavigation.setEnabled(
 			this.settings.experimentalTagNavigation,
@@ -92,6 +98,7 @@ export default class InkwellPlugin extends Plugin {
 		this.registerEditorExtension(createVisualColumnsExtension(this));
 		this.registerEditorExtension(createVisualCalloutsExtension(this));
 		this.registerEditorExtension(createVisualTabsExtension(this));
+		this.registerEditorExtension(createVisualSyncedExtension(this));
 		this.registerEditorExtension(createRootVisualMarkdownExtension(this));
 		this.registerEditorExtension(createBlockGutterExtension(this));
 		this.updateColumnPrototypeBodyClass();

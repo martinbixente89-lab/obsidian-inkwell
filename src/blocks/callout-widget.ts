@@ -1068,8 +1068,8 @@ function buildCalloutDecorations(
 		const line = doc.line(i);
 		const lineText = line.text;
 
-		// Skip multi-column and tabs callout blocks altogether
-		if (/^\s*>\s*\[!(?:multi-column|columns|tabs)(?:\|.*)?\]/i.test(lineText)) {
+		// Skip multi-column, tabs, and synced callout blocks altogether
+		if (/^\s*>\s*\[!(?:multi-column|columns|tabs|synced)(?:\|.*)?\]/i.test(lineText)) {
 			i++;
 			while (i <= doc.lines && /^\s*>/.test(doc.line(i).text)) {
 				i++;
