@@ -1,4 +1,5 @@
 import { MarkdownPostProcessorContext, Plugin, setIcon } from 'obsidian';
+import { parseCalloutMetadata } from './callout-parser';
 
 /**
  * Resolves the Lucide icon name for a given callout type, matching Inkwell's visual widgets.
@@ -138,6 +139,23 @@ export function harmonizeCalloutPreview(
 
 			calloutEl.appendChild(contentCol);
 		}
+
+		// Apply custom individual visual styles (bg, border on/off, border color)
+		const metaStr = calloutEl.getAttribute('data-callout-metadata');
+		const customStyle = parseCalloutMetadata(metaStr ?? undefined);
+
+		const bg = customStyle?.bg || '';
+		let border = '';
+		if (customStyle?.border === false) {
+			border = 'none';
+		} else if (customStyle?.borderColor) {
+			border = `1px solid ${customStyle.borderColor}`;
+		}
+
+		calloutEl.setCssProps({
+			'--inkwell-callout-bg': bg,
+			'--inkwell-callout-border': border,
+		});
 
 		// If custom title was extracted from Markdown, ensure titleInnerEl text is up to date
 		if (hasCustomTitle && title) {

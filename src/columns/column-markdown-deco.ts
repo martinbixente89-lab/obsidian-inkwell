@@ -29,6 +29,7 @@ import {
 	VisualMediaEmbedWidget,
 	VisualTableWidget,
 } from '../blocks/visual-embed-widgets';
+import { parseCalloutMetadata } from '../blocks/callout-parser';
 
 const HIDE_SYNTAX = Decoration.replace({});
 let activeVisualDecoPlugin: InkwellPlugin | null = null;
@@ -608,15 +609,18 @@ function buildColumnMarkdownDecos(state: EditorState): MarkdownDecoSets {
 		}
 
 		// 2. Callout, Collapsible Toggle, or Dynamic TOC block inside column: > [!TYPE] or > [!TYPE]- / > [!TYPE]+
-		const calloutMatch = /^(\s*>\s*\[!([a-zA-Z0-9_-]+)(?:\|[^\]]*)?\])([+-])?([ \t]*)(.*)$/.exec(
-			text,
-		);
+		const calloutMatch =
+			/^(\s*>\s*\[!([a-zA-Z0-9_-]+)(?:\|([^\]]*))?\])([+-])?([ \t]*)(.*)$/.exec(
+				text,
+			);
 		if (calloutMatch && calloutMatch[2]) {
 			const prefixBeforeFold = calloutMatch[1] ?? '';
 			const calloutType = calloutMatch[2];
-			const foldSymbol = calloutMatch[3] ?? '';
-			const spaceAfter = calloutMatch[4] ?? '';
-			const titleText = calloutMatch[5] ?? '';
+			const metaStr = calloutMatch[3] ?? '';
+			const foldSymbol = calloutMatch[4] ?? '';
+			const spaceAfter = calloutMatch[5] ?? '';
+			const titleText = calloutMatch[6] ?? '';
+			const colStyle = parseCalloutMetadata(metaStr);
 			const isToggle = foldSymbol === '-' || foldSymbol === '+';
 			const isCollapsed = foldSymbol === '-';
 
@@ -676,10 +680,29 @@ function buildColumnMarkdownDecos(state: EditorState): MarkdownDecoSets {
 					to: line.from + prefixTotalLen,
 				});
 			} else {
+				const headerAttrs: Record<string, string> = {};
+				const headerStyles: string[] = [];
+				if (colStyle?.bg) {
+					headerStyles.push(`background-color: ${colStyle.bg} !important`);
+				}
+				if (colStyle?.border === false) {
+					headerStyles.push('border: none !important');
+				} else if (colStyle?.borderColor) {
+					headerStyles.push(
+						`border-color: ${colStyle.borderColor} !important`,
+					);
+				}
+				if (headerStyles.length > 0) {
+					headerAttrs.style = headerStyles.join('; ');
+				}
+
 				lineAndMarkEntries.push({
 					from: line.from,
 					to: line.from,
-					deco: Decoration.line({ class: 'inkwell-col-callout-header' }),
+					deco: Decoration.line({
+						class: 'inkwell-col-callout-header',
+						attributes: Object.keys(headerAttrs).length > 0 ? headerAttrs : undefined,
+					}),
 				});
 				const replaceTo =
 					titleText.length > 0 ? line.from + prefixTotalLen : line.to;
@@ -713,6 +736,22 @@ function buildColumnMarkdownDecos(state: EditorState): MarkdownDecoSets {
 						deco: Decoration.line({ class: 'inkwell-col-toggle-body-collapsed' }),
 					});
 				} else {
+					const bodyAttrs: Record<string, string> = {};
+					const bodyStyles: string[] = [];
+					if (colStyle?.bg) {
+						bodyStyles.push(`background-color: ${colStyle.bg} !important`);
+					}
+					if (colStyle?.border === false) {
+						bodyStyles.push('border: none !important');
+					} else if (colStyle?.borderColor) {
+						bodyStyles.push(
+							`border-color: ${colStyle.borderColor} !important`,
+						);
+					}
+					if (bodyStyles.length > 0) {
+						bodyAttrs.style = bodyStyles.join('; ');
+					}
+
 					lineAndMarkEntries.push({
 						from: bodyLine.from,
 						to: bodyLine.from,
@@ -720,6 +759,7 @@ function buildColumnMarkdownDecos(state: EditorState): MarkdownDecoSets {
 							class: isToggle
 								? 'inkwell-col-toggle-body'
 								: 'inkwell-col-callout-body',
+							attributes: Object.keys(bodyAttrs).length > 0 ? bodyAttrs : undefined,
 						}),
 					});
 					if (bPrefix.length > 0) {

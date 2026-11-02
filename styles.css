@@ -2110,8 +2110,8 @@ body.inkwell-page-full-width .workspace-leaf-content[data-type="markdown"] .mark
 .inkwell-visual-callout-root.is-callout-block {
 	padding: 10px 14px;
 	border-radius: 8px;
-	background-color: var(--background-secondary-alt, var(--background-secondary));
-	border: 1px solid var(--background-modifier-border);
+	background-color: var(--inkwell-callout-bg, var(--background-secondary-alt, var(--background-secondary)));
+	border: var(--inkwell-callout-border, 1px solid var(--background-modifier-border));
 }
 
 .inkwell-visual-callout-root.is-toggle-block {
@@ -2120,11 +2120,30 @@ body.inkwell-page-full-width .workspace-leaf-content[data-type="markdown"] .mark
 	background: transparent;
 }
 
-.inkwell-visual-callout-source-btn {
+.inkwell-visual-callout-actions {
 	position: absolute;
 	top: 6px;
 	right: 6px;
 	z-index: 15;
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	opacity: 0;
+	transition: opacity 0.15s ease;
+}
+
+.inkwell-visual-callout-root:hover .inkwell-visual-callout-actions,
+.inkwell-visual-callout-root:focus-within .inkwell-visual-callout-actions,
+.inkwell-visual-callout-root.has-open-style-menu .inkwell-visual-callout-actions {
+	opacity: 0.85;
+}
+
+.inkwell-visual-callout-actions:hover {
+	opacity: 1 !important;
+}
+
+.inkwell-visual-callout-settings-btn,
+.inkwell-visual-callout-source-btn {
 	width: 24px;
 	height: 24px;
 	padding: 0;
@@ -2136,21 +2155,19 @@ body.inkwell-page-full-width .workspace-leaf-content[data-type="markdown"] .mark
 	align-items: center;
 	justify-content: center;
 	cursor: pointer;
-	opacity: 0;
-	transition: opacity 0.15s ease, color 0.15s ease;
+	transition: color 0.15s ease, background-color 0.15s ease;
 }
 
-.inkwell-visual-callout-root:hover .inkwell-visual-callout-source-btn,
-.inkwell-visual-callout-root:focus-within .inkwell-visual-callout-source-btn {
-	opacity: 0.75;
-}
-
-.inkwell-visual-callout-source-btn:hover {
+.inkwell-visual-callout-settings-btn:hover,
+.inkwell-visual-callout-source-btn:hover,
+.inkwell-visual-callout-settings-btn:focus-visible,
+.inkwell-visual-callout-source-btn:focus-visible {
 	opacity: 1 !important;
 	color: var(--text-normal);
 	background-color: var(--background-modifier-hover) !important;
 }
 
+.inkwell-visual-callout-settings-btn svg,
 .inkwell-visual-callout-source-btn svg {
 	width: 14px;
 	height: 14px;
@@ -3037,8 +3054,8 @@ body.inkwell-page-full-width .workspace-leaf-content[data-type="markdown"] .mark
 	margin: 0.45rem 0 !important;
 	padding: 10px 14px !important;
 	border-radius: 8px !important;
-	background-color: var(--background-secondary-alt, var(--background-secondary)) !important;
-	border: 1px solid var(--background-modifier-border) !important;
+	background-color: var(--inkwell-callout-bg, var(--background-secondary-alt, var(--background-secondary))) !important;
+	border: var(--inkwell-callout-border, 1px solid var(--background-modifier-border)) !important;
 	box-shadow: none !important;
 	display: flex !important;
 	flex-direction: row !important;
@@ -3133,3 +3150,257 @@ body.inkwell-page-full-width .workspace-leaf-content[data-type="markdown"] .mark
 .markdown-rendered .callout[data-callout="note"] .callout-content p:last-child {
 	margin-bottom: 0 !important;
 }
+
+/* ==========================================================================
+   Callout Visual Style Popover (Menu d'apparence de l'encadré)
+   ========================================================================== */
+
+.inkwell-callout-style-popover {
+	position: fixed;
+	z-index: 1000;
+	background-color: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	box-shadow: var(--shadow-l, 0 10px 25px rgba(0, 0, 0, 0.25));
+	padding: 12px 14px;
+	width: 270px;
+	box-sizing: border-box;
+	font-family: var(--font-interface);
+	font-size: 13px;
+	user-select: none;
+	animation: inkwell-fade-in 0.12s ease-out;
+}
+
+.inkwell-style-popover-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding-bottom: 8px;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.inkwell-style-popover-title {
+	font-weight: 600;
+	font-size: 13px;
+	color: var(--text-normal);
+}
+
+.inkwell-style-popover-close-btn {
+	background: transparent !important;
+	border: none !important;
+	padding: 0;
+	width: 22px;
+	height: 22px;
+	border-radius: 4px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	color: var(--text-muted);
+	cursor: pointer;
+	transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.inkwell-style-popover-close-btn:hover {
+	color: var(--text-normal);
+	background-color: var(--background-modifier-hover) !important;
+}
+
+.inkwell-style-popover-close-btn svg {
+	width: 14px;
+	height: 14px;
+}
+
+.inkwell-style-popover-section {
+	margin-top: 10px;
+	transition: opacity 0.15s ease;
+}
+
+.inkwell-style-popover-section.is-disabled {
+	opacity: 0.35;
+	pointer-events: none;
+}
+
+.inkwell-style-popover-label {
+	display: block;
+	font-size: 11.5px;
+	font-weight: 500;
+	color: var(--text-muted);
+	margin-bottom: 6px;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+}
+
+.inkwell-style-swatches-row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.inkwell-style-swatch {
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	border: 1px solid var(--background-modifier-border) !important;
+	cursor: pointer;
+	padding: 0;
+	margin: 0;
+	outline: none !important;
+	box-shadow: none;
+	position: relative;
+	transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.inkwell-style-swatch:hover {
+	transform: scale(1.15);
+}
+
+.inkwell-style-swatch.is-active {
+	box-shadow: 0 0 0 2px var(--background-primary), 0 0 0 4px var(--interactive-accent) !important;
+	border-color: var(--interactive-accent) !important;
+}
+
+.inkwell-style-swatch.is-default-swatch {
+	background: repeating-linear-gradient(
+		45deg,
+		var(--background-secondary),
+		var(--background-secondary) 3px,
+		var(--background-modifier-border) 3px,
+		var(--background-modifier-border) 6px
+	) !important;
+}
+
+.inkwell-style-custom-color-wrap {
+	position: relative;
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	border: 1.5px dashed var(--interactive-accent);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: pointer;
+	overflow: hidden;
+	background: transparent;
+	transition: transform 0.12s ease;
+	box-sizing: border-box;
+}
+
+.inkwell-style-custom-color-wrap:hover {
+	transform: scale(1.15);
+}
+
+.inkwell-style-color-input {
+	position: absolute;
+	inset: -8px;
+	width: 40px;
+	height: 40px;
+	opacity: 0;
+	cursor: pointer;
+	border: none;
+	padding: 0;
+}
+
+.inkwell-style-custom-icon {
+	color: var(--interactive-accent);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	pointer-events: none;
+}
+
+.inkwell-style-custom-icon svg {
+	width: 12px;
+	height: 12px;
+}
+
+.inkwell-style-popover-row-inline {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-top: 12px;
+	padding: 8px 0;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.inkwell-style-popover-label-inline {
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--text-normal);
+}
+
+.inkwell-style-switch-wrap {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.inkwell-style-switch-text {
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--text-muted);
+	min-width: 24px;
+	text-align: right;
+}
+
+.inkwell-style-switch-track {
+	position: relative;
+	width: 36px;
+	height: 20px;
+	border-radius: 10px;
+	background-color: var(--background-modifier-border);
+	cursor: pointer;
+	transition: background-color 0.15s ease;
+	outline: none;
+}
+
+.inkwell-style-switch-track:focus-visible {
+	box-shadow: 0 0 0 2px var(--interactive-accent);
+}
+
+.inkwell-style-switch-track.is-checked {
+	background-color: var(--interactive-accent);
+}
+
+.inkwell-style-switch-thumb {
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 16px;
+	height: 16px;
+	border-radius: 50%;
+	background-color: white;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+	transition: transform 0.15s ease;
+}
+
+.inkwell-style-switch-track.is-checked .inkwell-style-switch-thumb {
+	transform: translateX(16px);
+}
+
+.inkwell-style-popover-footer {
+	margin-top: 12px;
+	padding-top: 8px;
+	border-top: 1px solid var(--background-modifier-border);
+	display: flex;
+	justify-content: flex-end;
+}
+
+.inkwell-style-popover-reset-btn {
+	background: transparent !important;
+	border: none !important;
+	box-shadow: none !important;
+	font-size: 12px;
+	color: var(--text-muted);
+	cursor: pointer;
+	padding: 3px 8px;
+	border-radius: 4px;
+	transition: color 0.12s ease, background-color 0.12s ease;
+}
+
+.inkwell-style-popover-reset-btn:hover {
+	color: var(--text-accent);
+	text-decoration: underline;
+	background-color: var(--background-modifier-hover) !important;
+}
+

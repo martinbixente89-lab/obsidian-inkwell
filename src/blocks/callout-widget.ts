@@ -30,6 +30,10 @@ import {
 	SingleCalloutData,
 } from './callout-parser';
 import {
+	CalloutStylePopover,
+	openCalloutStylePopover,
+} from './callout-style-popover';
+import {
 	isOffsetInFoldedHeadingSection,
 	onHeadingFoldChange,
 } from './heading-fold';
@@ -104,6 +108,7 @@ export class VisualCalloutController {
 	private rawSourceView: EditorView | null = null;
 	private tocListEl: HTMLElement | null = null;
 	private unsubscribeFoldChange: (() => void) | null = null;
+	private activeStylePopover: CalloutStylePopover | null = null;
 
 	constructor(
 		rawMarkdown: string,
@@ -196,6 +201,28 @@ export class VisualCalloutController {
 		this.rootEl.classList.toggle('is-callout-block', !isToggle && !isToc);
 		this.rootEl.classList.toggle('is-collapsed', this.data.foldMode === 'collapsed');
 
+		this.applyCustomStyles();
+
+		// Top-right actions wrap
+		const actionsWrap = document.createElement('div');
+		actionsWrap.className = 'inkwell-visual-callout-actions';
+
+		// Gear button for styling
+		if (!isToc && !isToggle) {
+			const settingsBtn = document.createElement('button');
+			settingsBtn.type = 'button';
+			settingsBtn.className = 'inkwell-visual-callout-settings-btn';
+			settingsBtn.title = 'Personnaliser l’apparence de l’encadré';
+			settingsBtn.setAttribute('aria-label', settingsBtn.title);
+			setIcon(settingsBtn, 'settings');
+			settingsBtn.addEventListener('click', (e) => {
+				e.preventDefault();
+				e.stopPropagation();
+				this.openStylePopover(settingsBtn);
+			});
+			actionsWrap.appendChild(settingsBtn);
+		}
+
 		// Top-right discreet source toggle button (</>)
 		const sourceBtn = document.createElement('button');
 		sourceBtn.type = 'button';
@@ -210,7 +237,9 @@ export class VisualCalloutController {
 			e.stopPropagation();
 			this.toggleRawSourceMode();
 		});
-		this.rootEl.appendChild(sourceBtn);
+		actionsWrap.appendChild(sourceBtn);
+
+		this.rootEl.appendChild(actionsWrap);
 
 		if (this.isRawSourceMode) {
 			this.rawSourceContainerEl = document.createElement('div');
@@ -404,6 +433,48 @@ export class VisualCalloutController {
 			return 'check-circle';
 		}
 		return 'message-square';
+	}
+
+	public applyCustomStyles(): void {
+		const bg = this.data.style?.bg || '';
+		let border = '';
+		if (this.data.style?.border === false) {
+			border = 'none';
+		} else if (this.data.style?.borderColor) {
+			border = `1px solid ${this.data.style.borderColor}`;
+		}
+
+		this.rootEl.setCssProps({
+			'--inkwell-callout-bg': bg,
+			'--inkwell-callout-border': border,
+		});
+	}
+
+	private openStylePopover(anchorEl: HTMLElement): void {
+		if (this.activeStylePopover) {
+			this.activeStylePopover.close();
+			this.activeStylePopover = null;
+			return;
+		}
+
+		this.rootEl.classList.add('has-open-style-menu');
+		this.activeStylePopover = openCalloutStylePopover({
+			anchorEl,
+			initialStyle: this.data.style,
+			onPreviewStyle: (newStyle) => {
+				this.data.style = newStyle;
+				this.applyCustomStyles();
+			},
+			onCommitStyle: (finalStyle) => {
+				this.data.style = finalStyle;
+				this.applyCustomStyles();
+				this.syncDataToParent('input.style');
+			},
+			onClose: () => {
+				this.activeStylePopover = null;
+				this.rootEl.classList.remove('has-open-style-menu');
+			},
+		});
 	}
 
 	public toggleFoldState(): void {
@@ -760,6 +831,7 @@ export class VisualCalloutController {
 		const prevTitle = this.data.title;
 		this.lastRawMarkdown = newRawMarkdown;
 		this.data = parseSingleCalloutMarkdown(newRawMarkdown);
+		this.applyCustomStyles();
 
 		const wasToggle = prevFoldMode === 'collapsed' || prevFoldMode === 'expanded';
 		const isToggle = this.data.foldMode === 'collapsed' || this.data.foldMode === 'expanded';
@@ -904,6 +976,10 @@ export class VisualCalloutController {
 	}
 
 	public destroy(): void {
+		if (this.activeStylePopover) {
+			this.activeStylePopover.close();
+			this.activeStylePopover = null;
+		}
 		if (this.unsubscribeFoldChange) {
 			this.unsubscribeFoldChange();
 			this.unsubscribeFoldChange = null;
