@@ -40,12 +40,20 @@ export interface InkwellSettings {
 
 	// État des titres dépliants (H1-H3) par note : conserve de vrais titres Markdown '#' tout en mémorisant le caractère dépliant et l'état replié/déplié
 	headingFoldStates?: Record<string, { isToggle?: boolean; collapsed?: boolean }>;
+
+	// V1.4.0 — Toolbar presentation & style
+	toolbarLayout: 'horizontal' | 'radial';
+	toolbarStyle: 'classic' | 'liquid-glass';
+	toolbarReduceTransparency: boolean;
 }
 
 export const DEFAULT_SETTINGS: InkwellSettings = {
 	defaultColor: DEFAULT_TEXT_COLOR,
 	defaultHighlightColor: DEFAULT_HIGHLIGHT_COLOR,
 	toolbarEnabled: true,
+	toolbarLayout: 'horizontal',
+	toolbarStyle: 'classic',
+	toolbarReduceTransparency: false,
 	experimentalTagNavigation: true,
 	experimentalColorBoldSupport: true,
 	slashMenuEnabled: true,
@@ -228,10 +236,22 @@ export function sanitizeSettings(loaded: unknown): InkwellSettings {
 		}
 	}
 
+	const toolbarLayout: 'horizontal' | 'radial' =
+		data.toolbarLayout === 'radial' ? 'radial' : DEFAULT_SETTINGS.toolbarLayout;
+	const toolbarStyle: 'classic' | 'liquid-glass' =
+		data.toolbarStyle === 'liquid-glass' ? 'liquid-glass' : DEFAULT_SETTINGS.toolbarStyle;
+	const toolbarReduceTransparency =
+		typeof data.toolbarReduceTransparency === 'boolean'
+			? data.toolbarReduceTransparency
+			: DEFAULT_SETTINGS.toolbarReduceTransparency;
+
 	return {
 		defaultColor,
 		defaultHighlightColor,
 		toolbarEnabled: rawToolbar,
+		toolbarLayout,
+		toolbarStyle,
+		toolbarReduceTransparency,
 		experimentalTagNavigation: rawNav,
 		experimentalColorBoldSupport: rawBold,
 		slashMenuEnabled: rawSlash,

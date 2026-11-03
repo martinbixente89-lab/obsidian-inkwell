@@ -187,6 +187,34 @@ test('settings: toolbarEnabled setting lifecycle (V0.4.0)', async (t) => {
 		assert.equal(sanitized.experimentalTagNavigation, true);
 		assert.equal(sanitized.experimentalColorBoldSupport, true);
 	});
+
+	await t.test('defaults toolbar presentation and style settings correctly', () => {
+		assert.equal(DEFAULT_SETTINGS.toolbarLayout, 'horizontal');
+		assert.equal(DEFAULT_SETTINGS.toolbarStyle, 'classic');
+		assert.equal(DEFAULT_SETTINGS.toolbarReduceTransparency, false);
+	});
+
+	await t.test('sanitizes toolbar presentation and style safely', () => {
+		const sanitized = sanitizeSettings({
+			toolbarLayout: 'radial',
+			toolbarStyle: 'liquid-glass',
+			toolbarReduceTransparency: true,
+		});
+		assert.equal(sanitized.toolbarLayout, 'radial');
+		assert.equal(sanitized.toolbarStyle, 'liquid-glass');
+		assert.equal(sanitized.toolbarReduceTransparency, true);
+	});
+
+	await t.test('falls back to safe defaults for invalid toolbar style values', () => {
+		const sanitized = sanitizeSettings({
+			toolbarLayout: 'unknown-layout',
+			toolbarStyle: 'unknown-style',
+			toolbarReduceTransparency: 'not-a-boolean',
+		});
+		assert.equal(sanitized.toolbarLayout, 'horizontal');
+		assert.equal(sanitized.toolbarStyle, 'classic');
+		assert.equal(sanitized.toolbarReduceTransparency, false);
+	});
 });
 
 test('selection validation checks: unmarked spans (V0.4.0)', async (t) => {

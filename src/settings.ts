@@ -84,7 +84,61 @@ export class InkwellSettingTab extends PluginSettingTab {
 					});
 			});
 
-		// 3b. Slash Menu Toggle
+		// 3a. Toolbar Layout (Barre horizontale vs Anneau radial)
+		new Setting(containerEl)
+			.setName('Disposition de la barre d’outils')
+			.setDesc(
+				'Choix de la géométrie de la barre lors d’une sélection de texte.',
+			)
+			.addDropdown((dropdown) => {
+				dropdown
+					.addOption('horizontal', 'Barre horizontale (classique)')
+					.addOption('radial', 'Anneau radial (prototype)')
+					.setValue(this.plugin.settings.toolbarLayout)
+					.onChange(async (value: string) => {
+						this.plugin.settings.toolbarLayout =
+							value === 'radial' ? 'radial' : 'horizontal';
+						await this.plugin.saveSettings();
+						this.plugin.onToolbarSettingChanged();
+					});
+			});
+
+		// 3b. Toolbar Style (Classique vs Liquid Glass)
+		new Setting(containerEl)
+			.setName('Apparence de la barre d’outils')
+			.setDesc(
+				'Style visuel de la barre flottante : sobre opaque ou capsule translucide Liquid Glass.',
+			)
+			.addDropdown((dropdown) => {
+				dropdown
+					.addOption('classic', 'Classique (opaque natif)')
+					.addOption('liquid-glass', 'Liquid Glass (capsule translucide avec flou)')
+					.setValue(this.plugin.settings.toolbarStyle)
+					.onChange(async (value: string) => {
+						this.plugin.settings.toolbarStyle =
+							value === 'liquid-glass' ? 'liquid-glass' : 'classic';
+						await this.plugin.saveSettings();
+						this.plugin.onToolbarSettingChanged();
+					});
+			});
+
+		// 3c. Toolbar Transparency Toggle
+		new Setting(containerEl)
+			.setName('Réduire la transparence de la barre d’outils')
+			.setDesc(
+				'Désactive les effets de transparence et de flou translucide au profit d’un fond opaque contrasté, améliorant la lisibilité sur fond complexe ou si la transparence fatigue.',
+			)
+			.addToggle((toggle) => {
+				toggle
+					.setValue(this.plugin.settings.toolbarReduceTransparency)
+					.onChange(async (value) => {
+						this.plugin.settings.toolbarReduceTransparency = value;
+						await this.plugin.saveSettings();
+						this.plugin.onToolbarSettingChanged();
+					});
+			});
+
+		// 3d. Slash Menu Toggle
 		new Setting(containerEl)
 			.setName('Menu d’insertion slash (/)')
 			.setDesc(

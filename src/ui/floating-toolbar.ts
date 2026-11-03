@@ -204,6 +204,7 @@ export class FloatingToolbarManager {
 		];
 
 		this.updateRovingTabIndex(0);
+		this.applyThemeClasses();
 		doc.body.appendChild(this.toolbarEl);
 	}
 
@@ -327,10 +328,25 @@ export class FloatingToolbarManager {
 	}
 
 	public onSettingChanged(): void {
+		this.applyThemeClasses();
 		if (!this.plugin.settings.toolbarEnabled) {
 			this.hide();
 		} else {
 			this.update();
+		}
+	}
+
+	public applyThemeClasses(): void {
+		if (!this.toolbarEl) return;
+		const isLiquidGlass = this.plugin.settings.toolbarStyle === 'liquid-glass';
+		const reduceTransparency = this.plugin.settings.toolbarReduceTransparency;
+
+		this.toolbarEl.classList.toggle('inkwell-theme-liquid-glass', isLiquidGlass);
+		this.toolbarEl.classList.toggle('inkwell-reduce-transparency', reduceTransparency);
+
+		if (this.popoverEl) {
+			this.popoverEl.classList.toggle('inkwell-theme-liquid-glass', isLiquidGlass);
+			this.popoverEl.classList.toggle('inkwell-reduce-transparency', reduceTransparency);
 		}
 	}
 
@@ -716,6 +732,7 @@ export class FloatingToolbarManager {
 			this.popoverEl?.appendChild(btn);
 		});
 
+		this.applyThemeClasses();
 		doc.body.appendChild(this.popoverEl);
 		this.reposition();
 		const firstBtn = this.popoverEl.querySelector('button');
@@ -932,6 +949,7 @@ export class FloatingToolbarManager {
 			this.popoverEl.appendChild(mixedBadge);
 		}
 
+		this.applyThemeClasses();
 		doc.body.appendChild(this.popoverEl);
 		this.reposition();
 	}
@@ -1150,6 +1168,7 @@ export class FloatingToolbarManager {
 			this.popoverEl.appendChild(mixedBadge);
 		}
 
+		this.applyThemeClasses();
 		doc.body.appendChild(this.popoverEl);
 		this.reposition();
 	}
@@ -1607,6 +1626,7 @@ export class FloatingToolbarManager {
 
 		renderSwatches();
 
+		this.applyThemeClasses();
 		doc.body.appendChild(this.popoverEl);
 		this.reposition();
 	}
