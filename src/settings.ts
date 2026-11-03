@@ -88,19 +88,14 @@ export class InkwellSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName('Disposition de la barre d’outils')
 			.setDesc(
-				'Choix de la géométrie de la barre lors d’une sélection de texte.',
+				'Choix de la géométrie de la barre lors d’une sélection de texte. L’anneau radial est en cours de préparation (Étape 2).',
 			)
 			.addDropdown((dropdown) => {
 				dropdown
-					.addOption('horizontal', 'Barre horizontale (classique)')
-					.addOption('radial', 'Anneau radial (prototype)')
-					.setValue(this.plugin.settings.toolbarLayout)
-					.onChange(async (value: string) => {
-						this.plugin.settings.toolbarLayout =
-							value === 'radial' ? 'radial' : 'horizontal';
-						await this.plugin.saveSettings();
-						this.plugin.onToolbarSettingChanged();
-					});
+					.addOption('horizontal', 'Barre horizontale (active)')
+					.addOption('radial', 'Anneau radial (bientôt disponible — Étape 2)')
+					.setValue('horizontal')
+					.setDisabled(true);
 			});
 
 		// 3b. Toolbar Style (Classique vs Liquid Glass)
