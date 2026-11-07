@@ -4,6 +4,29 @@ Toutes les modifications notables apportées au plugin **Inkwell** sont consign�
 
 Le format s’appuie sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/) et respecte les règles de [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.6.2] - 2026-11-07
+
+### Version 1.6.2 — Correctif : Menu slash d’Inkwell et « Commandes slash » d’Obsidian mutuellement exclusifs
+
+Cette version corrective évite l’ouverture simultanée du menu slash d’Inkwell et du module natif « Commandes slash » d’Obsidian.
+
+### Corrections et Comportement
+- **Un seul menu slash à la fois** :
+  - Lorsque le module natif est actif, le menu d’Inkwell ne s’ouvre pas, quelle que soit la tentative d’ouverture : frappe de `/`, collage ou bouton « + » de la gouttière.
+  - Le bouton « + » n’insère plus de `/` inutile lorsque le menu d’Inkwell ne peut pas s’ouvrir ; une notice explique pourquoi.
+- **Choix explicite, sans changement silencieux** :
+  - Si les deux menus sont actifs sans choix préalable, Inkwell ne modifie aucun réglage : une notice unique explique le conflit et propose d’ouvrir les réglages d’Inkwell pour choisir.
+  - Choisir le menu d’Inkwell demande une confirmation avant de désactiver le module natif ; le basculement n’est considéré comme terminé qu’après vérification que le module est réellement désactivé. En cas de refus ou d’échec (par exemple module imposé par une configuration gérée), le menu d’Inkwell reste désactivé.
+  - Si le module natif est ensuite réactivé, seul le menu slash d’Inkwell est désactivé à la tentative d’ouverture suivante ou à l’ouverture des réglages d’Inkwell, avec une explication. Le plugin Inkwell reste actif.
+  - Désactiver un menu ne réactive jamais l’autre. Aucun réglage n’est modifié au chargement du plugin.
+- **Détection indisponible** : si l’état du module natif ne peut pas être lu, Inkwell ne le présente pas comme désactivé, ne modifie rien dans Obsidian et indique la procédure manuelle (désactiver « Commandes slash » dans les modules principaux, puis confirmer le choix dans les réglages d’Inkwell).
+
+### Limites connues
+- La lecture et la désactivation du module natif reposent sur des API internes d’Obsidian, non documentées et vérifiées sur Obsidian 1.15.0 ; elles sont détectées avant usage et, en leur absence, la procédure manuelle s’applique.
+- L’état du module natif est vérifié au moment de l’usage (tentative d’ouverture, affichage des réglages), sans surveillance permanente.
+
+---
+
 ## [1.6.1] - 2026-11-07
 
 ### Version 1.6.1 — Correctif : Fiabilité des blocs synchronisés
