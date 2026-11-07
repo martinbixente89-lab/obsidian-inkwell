@@ -6,6 +6,7 @@ import {
 	setTooltip,
 } from 'obsidian';
 import type InkwellPlugin from '../main';
+import { PerDocumentAttachment, relocateToDocument } from './toolbar-windows';
 import { clearInkwellFormatting } from '../commands/clear-styles';
 import {
 	CapturedEditorSelection,
@@ -80,7 +81,10 @@ export class FloatingToolbarManager {
 	}
 
 	private buildToolbarDOM(): void {
-		const doc = activeWindow.document;
+		// Main window document, not whichever window is active while the plugin loads
+		// (e.g. a popout during an in-session update). It is moved on demand to the
+		// editor's window in update().
+		const doc = this.plugin.app.workspace.containerEl.doc;
 		this.toolbarEl = doc.createElement('div');
 		this.toolbarEl.className = 'inkwell-floating-toolbar is-hidden';
 		this.toolbarEl.setAttribute('role', 'toolbar');
@@ -267,8 +271,6 @@ export class FloatingToolbarManager {
 	}
 
 	private registerListeners(): void {
-		const doc = activeWindow.document;
-
 		const onSelectionChange = () => {
 			if (this.isMouseDown) return;
 			this.update();
@@ -301,19 +303,28 @@ export class FloatingToolbarManager {
 			this.reposition();
 		};
 
-		doc.addEventListener('selectionchange', onSelectionChange);
-		doc.addEventListener('mousedown', onMouseDown);
-		doc.addEventListener('mouseup', onMouseUp);
-		activeWindow.addEventListener('scroll', onScroll, { capture: true, passive: true });
-		activeWindow.addEventListener('resize', onResize, { passive: true });
-
-		this.plugin.register(() => {
-			doc.removeEventListener('selectionchange', onSelectionChange);
-			doc.removeEventListener('mousedown', onMouseDown);
-			doc.removeEventListener('mouseup', onMouseUp);
-			activeWindow.removeEventListener('scroll', onScroll, { capture: true });
-			activeWindow.removeEventListener('resize', onResize);
+		// Attach once per window (main, existing popouts, popouts opened later).
+		// registerDomEvent removes every listener when the plugin unloads.
+		const windows = new PerDocumentAttachment<Document>((doc) => {
+			const win = doc.defaultView;
+			this.plugin.registerDomEvent(doc, 'selectionchange', onSelectionChange);
+			this.plugin.registerDomEvent(doc, 'mousedown', onMouseDown);
+			this.plugin.registerDomEvent(doc, 'mouseup', onMouseUp);
+			if (win) {
+				this.plugin.registerDomEvent(win, 'scroll', onScroll, { capture: true, passive: true });
+				this.plugin.registerDomEvent(win, 'resize', onResize, { passive: true });
+			}
 		});
+		const workspace = this.plugin.app.workspace;
+		windows.ensure(workspace.containerEl.doc);
+		workspace.iterateAllLeaves((leaf) => {
+			windows.ensure(leaf.view.containerEl.doc);
+		});
+		this.plugin.registerEvent(
+			workspace.on('window-open', (_workspaceWindow, win) => {
+				windows.ensure(win.document);
+			}),
+		);
 
 		this.plugin.registerEvent(
 			this.plugin.app.workspace.on('file-open', () => this.hide()),
@@ -406,6 +417,13 @@ export class FloatingToolbarManager {
 		this.capturedSelection = validation.captured;
 		this.currentEditor = validation.captured.editor;
 		this.currentFilePath = validation.captured.filePath;
+
+		// Show the toolbar in the window of the editor holding the selection.
+		const editorDoc =
+			this.plugin.app.workspace.getActiveViewOfType(MarkdownView)?.containerEl.doc;
+		if (this.toolbarEl && relocateToDocument(this.toolbarEl, editorDoc)) {
+			this.closePopover();
+		}
 
 		this.applyButtonStates(validation);
 		this.reposition();
