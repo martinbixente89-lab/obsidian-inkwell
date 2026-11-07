@@ -376,6 +376,12 @@ export class VisualSyncedBlockController {
 			return;
 		}
 
+		// Acquiring the lease may have flushed another occurrence's pending draft:
+		// edit from the lease baseline, which reflects the source after that flush.
+		const startBody =
+			this.plugin.syncedBlockManager.getLeaseInfo(sourceFile.path)?.lastSavedContent ?? body;
+		this.lastSavedBody = startBody;
+
 		if (this.previewComponent) {
 			this.previewComponent.unload();
 			this.previewComponent = null;
@@ -385,7 +391,7 @@ export class VisualSyncedBlockController {
 		this.isEditing = true;
 		this.updateBadge();
 
-		this.mountSubEditor(body);
+		this.mountSubEditor(startBody);
 	}
 
 	private mountSubEditor(initialBody: string): void {
@@ -576,7 +582,7 @@ export class VisualSyncedBlockController {
 			choice === 'keep-mine' ? 'Brouillon local conservé' : 'Version source rechargée';
 		const noticeMsg =
 			`Conflit résolu (${actionLabel}).\n` +
-			`Deux sauvegardes créées dans ${this.plugin.syncedBlockManager.getDefaultFolder()}/conflits/ :\n` +
+			`Sauvegardes de récupération dans ${this.plugin.syncedBlockManager.getDefaultFolder()}/conflits/ :\n` +
 			`• ${result.localBackupPath}\n` +
 			`• ${result.sourceBackupPath}`;
 
@@ -591,6 +597,35 @@ export class VisualSyncedBlockController {
 			await this.flushSave();
 		}
 
+		// A draft in conflict is never dropped: preserve it durably first, and stay
+		// in edit mode (keeping the lease) if that recovery cannot be confirmed.
+		if (this.activeEditorView) {
+			const draft = this.activeEditorView.state.doc.toString();
+			const preserved = await this.plugin.syncedBlockManager.preserveConflictDraft(
+				this.reference.targetPath,
+				this.occurrenceId,
+				draft,
+			);
+			if (!preserved.success) {
+				new Notice(
+					`${preserved.error ?? 'Échec de la sauvegarde de récupération.'}\n` +
+						'Le bloc reste en édition pour ne pas perdre votre brouillon. ' +
+						'Résolvez le conflit ou réessayez.',
+					10000,
+				);
+				return;
+			}
+			if (preserved.localBackupPath && !preserved.alreadyPreserved) {
+				new Notice(
+					'Conflit non résolu : la source n’a pas été modifiée.\n' +
+						`Sauvegardes créées dans ${this.plugin.syncedBlockManager.getDefaultFolder()}/conflits/ :\n` +
+						`• ${preserved.localBackupPath}` +
+						(preserved.sourceBackupPath ? `\n• ${preserved.sourceBackupPath}` : ''),
+					10000,
+				);
+			}
+		}
+
 		if (this.activeEditorView) {
 			this.activeEditorView.destroy();
 			this.activeEditorView = null;
@@ -601,6 +636,7 @@ export class VisualSyncedBlockController {
 			this.reference.targetPath,
 			this.occurrenceId,
 		);
+		this.hideConflictBanner();
 
 		this.updateBadge();
 		await this.renderPreview();

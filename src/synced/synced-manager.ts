@@ -12,6 +12,24 @@ export interface SyncedLeaseInfo {
 	hasConflict: boolean;
 	externalDiskContent?: string;
 	flushAndRelease?: () => Promise<void>;
+	/** Snapshots written for this conflict when leaving edit mode (deduplication). */
+	preservation?: ConflictPreservationRecord;
+}
+
+export interface ConflictPreservationRecord {
+	localDraft: string;
+	diskBody: string | null;
+	localBackupPath?: string;
+	sourceBackupPath?: string;
+}
+
+export interface ConflictPreservationResult {
+	success: boolean;
+	/** True when identical snapshots already existed and nothing new was written. */
+	alreadyPreserved?: boolean;
+	localBackupPath?: string;
+	sourceBackupPath?: string;
+	error?: string;
 }
 
 export interface ConflictRecoveryResult {
@@ -20,6 +38,8 @@ export interface ConflictRecoveryResult {
 	discardedBody: string;
 	localBackupPath?: string;
 	sourceBackupPath?: string;
+	/** True when the source changed again during the resolution: nothing was replaced. */
+	conflictChanged?: boolean;
 	error?: string;
 }
 
@@ -34,6 +54,7 @@ export class SyncedBlockManager {
 	private activeResolutionStack = new Set<string>();
 	private defaultFolder = '_synced';
 	private internalSavePaths = new Set<string>();
+	private preservationQueue = new Map<string, Promise<void>>();
 
 	constructor(private plugin: InkwellPlugin) {
 		this.registerVaultListeners();
@@ -192,12 +213,32 @@ export class SyncedBlockManager {
 	): Promise<boolean> {
 		const norm = this.normalizePath(sourcePath);
 		const existing = this.leases.get(norm);
+		let baselineContent = initialContent;
+		let baselineMtime = mtime;
 		if (existing && existing.occurrenceId !== occurrenceId) {
 			if (existing.flushAndRelease) {
 				try {
 					await existing.flushAndRelease();
 				} catch (e) {
 					console.error('[Inkwell] Error during lease flush:', e);
+				}
+				// The previous holder refused to release (e.g. its conflicting draft
+				// could not be preserved): do not take the lease over it.
+				const stillHeld = this.leases.get(norm);
+				if (stillHeld && stillHeld.occurrenceId !== occurrenceId) {
+					return false;
+				}
+				// The previous holder may have just written its pending draft:
+				// start the new lease from the source as it is now on disk,
+				// not from the content read before the flush.
+				const file = this.resolveSourceFile(sourcePath);
+				if (file) {
+					try {
+						baselineContent = extractSourceContent(await this.app.vault.read(file)).body;
+						baselineMtime = file.stat.mtime;
+					} catch (e) {
+						console.error('[Inkwell] Failed to re-read source after lease flush:', e);
+					}
 				}
 			} else {
 				return false;
@@ -206,8 +247,8 @@ export class SyncedBlockManager {
 
 		this.leases.set(norm, {
 			occurrenceId,
-			lastSavedContent: initialContent,
-			lastSeenMtime: mtime,
+			lastSavedContent: baselineContent,
+			lastSeenMtime: baselineMtime,
 			hasConflict: false,
 			flushAndRelease,
 		});
@@ -299,7 +340,186 @@ export class SyncedBlockManager {
 	}
 
 	/**
+	 * Writes one recovery snapshot in `_synced/conflits/` and confirms it exists.
+	 * Shared by explicit conflict resolution and draft preservation on exit.
+	 * Throws when the file cannot be created or confirmed.
+	 */
+	private async writeConflictSnapshot(
+		kind: 'brouillon-local' | 'version-source',
+		sourceFilePath: string,
+		content: string,
+		choiceLabel: string,
+		now: Date,
+	): Promise<string> {
+		const folder = `${this.defaultFolder}/conflits`;
+		const pad = (n: number) => n.toString().padStart(2, '0');
+		const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}h${pad(now.getMinutes())}m${pad(now.getSeconds())}s`;
+		const fileName = sourceFilePath.split('/').pop() ?? sourceFilePath;
+		const baseName = fileName.replace(/\.md$/i, '').replace(/[/\\:*?"<>|]/g, '-');
+		const title =
+			kind === 'brouillon-local' ? 'Brouillon local' : 'Version source (disque)';
+
+		await this.ensureFolderExists(folder);
+		const path = await this.getUniqueSourcePath(`${baseName}-${kind}-${dateStr}`, folder);
+
+		const header =
+			`---\ninkwell-recup-type: ${kind}\ninkwell-source-fichier: "${sourceFilePath}"\ndate-recup: "${now.toISOString()}"\n---\n` +
+			`# Récupération de conflit — ${title}\n` +
+			`- Source : [[${sourceFilePath}]]\n` +
+			`- Date : ${now.toLocaleString()}\n` +
+			`- Choix appliqué : ${choiceLabel}\n\n` +
+			`---\n\n`;
+
+		await this.app.vault.create(path, header + content);
+		if (!this.app.vault.getAbstractFileByPath(path)) {
+			throw new Error('Les fichiers de sauvegarde n’ont pas pu être confirmés sur le disque.');
+		}
+		return path;
+	}
+
+	/**
+	 * Durably preserves a conflicting local draft before its editor is closed
+	 * (exit from edit mode or lease transfer), without touching the source.
+	 *
+	 * - No-op success when this occurrence holds no lease in conflict.
+	 * - Writes the local draft and the current source version to `_synced/conflits/`
+	 *   using the same snapshot format as explicit conflict resolution.
+	 * - On failure, the lease and its conflict state are kept so the caller can
+	 *   refuse to close the editor; snapshots already written are remembered so a
+	 *   retry only writes what is missing.
+	 * - Repeated or concurrent calls with the same draft and source version reuse
+	 *   the existing snapshots instead of creating duplicates.
+	 */
+	public preserveConflictDraft(
+		sourcePath: string,
+		occurrenceId: string,
+		localDraft: string,
+	): Promise<ConflictPreservationResult> {
+		const norm = this.normalizePath(sourcePath);
+		const previous = this.preservationQueue.get(norm) ?? Promise.resolve();
+		const run = previous.then(() =>
+			this.doPreserveConflictDraft(sourcePath, occurrenceId, localDraft),
+		);
+		const tail = run.then(
+			() => undefined,
+			() => undefined,
+		);
+		this.preservationQueue.set(norm, tail);
+		void tail.then(() => {
+			if (this.preservationQueue.get(norm) === tail) {
+				this.preservationQueue.delete(norm);
+			}
+		});
+		return run;
+	}
+
+	private async doPreserveConflictDraft(
+		sourcePath: string,
+		occurrenceId: string,
+		localDraft: string,
+	): Promise<ConflictPreservationResult> {
+		const file = this.resolveSourceFile(sourcePath);
+		const sourceFilePath = file?.path ?? this.normalizePath(sourcePath);
+		const lease =
+			this.leases.get(this.normalizePath(sourcePath)) ??
+			this.leases.get(this.normalizePath(sourceFilePath));
+
+		if (!lease || lease.occurrenceId !== occurrenceId || !lease.hasConflict) {
+			return { success: true };
+		}
+
+		let diskBody: string | null = null;
+		if (file) {
+			try {
+				diskBody = extractSourceContent(await this.app.vault.read(file)).body;
+			} catch (e) {
+				return {
+					success: false,
+					error: `Lecture de la source impossible : ${(e as Error).message}`,
+				};
+			}
+		}
+
+		try {
+			const snapshots = await this.ensureConflictSnapshots(
+				lease,
+				sourceFilePath,
+				localDraft,
+				diskBody,
+				'Aucun — sortie d’édition pendant un conflit (source non modifiée)',
+			);
+			return {
+				success: true,
+				alreadyPreserved: !snapshots.wroteAny,
+				localBackupPath: snapshots.localBackupPath,
+				sourceBackupPath: snapshots.sourceBackupPath,
+			};
+		} catch (e) {
+			console.error('[Inkwell] Échec de la sauvegarde de récupération:', e);
+			return {
+				success: false,
+				localBackupPath: lease.preservation?.localBackupPath,
+				sourceBackupPath: lease.preservation?.sourceBackupPath,
+				error: `Échec de l’enregistrement de sécurité : ${(e as Error).message}`,
+			};
+		}
+	}
+
+	/**
+	 * Ensures the local draft and the given source version are saved in
+	 * `_synced/conflits/`, reusing snapshots already written in this conflict for
+	 * identical content (retries, repeated exits, resolution after a refused exit).
+	 * Throws on failure; snapshots written before the failure stay recorded on the lease.
+	 */
+	private async ensureConflictSnapshots(
+		lease: SyncedLeaseInfo,
+		sourceFilePath: string,
+		localDraft: string,
+		diskBody: string | null,
+		choiceLabel: string,
+	): Promise<{ localBackupPath?: string; sourceBackupPath?: string; wroteAny: boolean }> {
+		const previous = lease.preservation;
+		const record: ConflictPreservationRecord = {
+			localDraft,
+			diskBody,
+			localBackupPath:
+				previous?.localDraft === localDraft ? previous.localBackupPath : undefined,
+			sourceBackupPath:
+				previous && previous.diskBody === diskBody ? previous.sourceBackupPath : undefined,
+		};
+		lease.preservation = record;
+
+		const exists = (p?: string) => !!p && !!this.app.vault.getAbstractFileByPath(p);
+		const now = new Date();
+		let wroteAny = false;
+		if (!exists(record.localBackupPath)) {
+			record.localBackupPath = await this.writeConflictSnapshot(
+				'brouillon-local', sourceFilePath, localDraft, choiceLabel, now,
+			);
+			wroteAny = true;
+		}
+		if (diskBody !== null && !exists(record.sourceBackupPath)) {
+			record.sourceBackupPath = await this.writeConflictSnapshot(
+				'version-source', sourceFilePath, diskBody, choiceLabel, now,
+			);
+			wroteAny = true;
+		}
+		return {
+			localBackupPath: record.localBackupPath,
+			sourceBackupPath: record.sourceBackupPath,
+			wroteAny,
+		};
+	}
+
+	/**
 	 * Explicitly resolves an active conflict with durable recovery snapshots.
+	 *
+	 * Order: read the source (body + mtime) → save both versions (reusing identical
+	 * snapshots) → check the source did not change meanwhile → apply the choice.
+	 * "keep-mine" writes through `vault.process`, which re-checks the source body in
+	 * the same read-modify-write step, so a newer version is never overwritten by
+	 * Obsidian-side writes. If the source changed, nothing is replaced, the conflict
+	 * stays open with the newer content and `conflictChanged` is returned.
 	 */
 	public async resolveConflict(
 		sourcePath: string,
@@ -320,11 +540,33 @@ export class SyncedBlockManager {
 			};
 		}
 
-		// Read current source content from disk
+		const conflictChanged = (newerBody: string): ConflictRecoveryResult => {
+			lease.hasConflict = true;
+			lease.externalDiskContent = newerBody;
+			this.notify(norm, 'conflict');
+			return {
+				success: false,
+				conflictChanged: true,
+				resolvedBody: localDraft,
+				discardedBody: newerBody,
+				localBackupPath: lease.preservation?.localBackupPath,
+				sourceBackupPath: lease.preservation?.sourceBackupPath,
+				error:
+					'La note source a de nouveau été modifiée pendant la résolution. ' +
+					'Rien n’a été remplacé et votre brouillon est conservé. ' +
+					'Relancez la résolution pour sauvegarder aussi la nouvelle version.',
+			};
+		};
+
+		// Read current source content from disk, with the mtime it corresponds to
 		let diskBody = '';
+		let diskMtime = file.stat.mtime;
 		try {
 			const diskRaw = await this.app.vault.read(file);
 			diskBody = extractSourceContent(diskRaw).body;
+			if (file.stat.mtime !== diskMtime) {
+				return conflictChanged(extractSourceContent(await this.app.vault.read(file)).body);
+			}
 		} catch (e) {
 			return {
 				success: false,
@@ -334,53 +576,16 @@ export class SyncedBlockManager {
 			};
 		}
 
-		// Prepare recovery snapshots in _synced/conflits/
-		const folder = `${this.defaultFolder}/conflits`;
-		const now = new Date();
-		const pad = (n: number) => n.toString().padStart(2, '0');
-		const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}h${pad(now.getMinutes())}m${pad(now.getSeconds())}s`;
-		const baseName = file.basename.replace(/[/\\:*?"<>|]/g, '-');
-
-		let localBackupPath = '';
-		let sourceBackupPath = '';
-
+		// Recovery snapshots in _synced/conflits/ (reused when identical)
+		const choiceLabel = choice === 'keep-mine' ? 'Conserver ma version' : 'Charger la version source';
+		let localBackupPath: string | undefined;
+		let sourceBackupPath: string | undefined;
 		try {
-			await this.ensureFolderExists(folder);
-
-			localBackupPath = await this.getUniqueSourcePath(
-				`${baseName}-brouillon-local-${dateStr}`,
-				folder,
+			const snapshots = await this.ensureConflictSnapshots(
+				lease, file.path, localDraft, diskBody, choiceLabel,
 			);
-			sourceBackupPath = await this.getUniqueSourcePath(
-				`${baseName}-version-source-${dateStr}`,
-				folder,
-			);
-
-			const localHeader =
-				`---\ninkwell-recup-type: brouillon-local\ninkwell-source-fichier: "${file.path}"\ndate-recup: "${now.toISOString()}"\n---\n` +
-				`# Récupération de conflit — Brouillon local\n` +
-				`- Source : [[${file.path}]]\n` +
-				`- Date : ${now.toLocaleString()}\n` +
-				`- Choix appliqué : ${choice === 'keep-mine' ? 'Conserver ma version' : 'Charger la version source'}\n\n` +
-				`---\n\n`;
-
-			const sourceHeader =
-				`---\ninkwell-recup-type: version-source\ninkwell-source-fichier: "${file.path}"\ndate-recup: "${now.toISOString()}"\n---\n` +
-				`# Récupération de conflit — Version source (disque)\n` +
-				`- Source : [[${file.path}]]\n` +
-				`- Date : ${now.toLocaleString()}\n` +
-				`- Choix appliqué : ${choice === 'keep-mine' ? 'Conserver ma version' : 'Charger la version source'}\n\n` +
-				`---\n\n`;
-
-			// Create both recovery snapshot files and confirm their existence on disk
-			await this.app.vault.create(localBackupPath, localHeader + localDraft);
-			await this.app.vault.create(sourceBackupPath, sourceHeader + diskBody);
-
-			const checkLocal = this.app.vault.getAbstractFileByPath(localBackupPath);
-			const checkSource = this.app.vault.getAbstractFileByPath(sourceBackupPath);
-			if (!checkLocal || !checkSource) {
-				throw new Error('Les fichiers de sauvegarde n’ont pas pu être confirmés sur le disque.');
-			}
+			localBackupPath = snapshots.localBackupPath;
+			sourceBackupPath = snapshots.sourceBackupPath;
 		} catch (e) {
 			// CRITICAL: If backup fails, DO NOT OVERWRITE! Keep conflict state open!
 			console.error('[Inkwell] Échec de la sauvegarde de récupération:', e);
@@ -388,24 +593,73 @@ export class SyncedBlockManager {
 				success: false,
 				resolvedBody: localDraft,
 				discardedBody: diskBody,
+				localBackupPath: lease.preservation?.localBackupPath,
+				sourceBackupPath: lease.preservation?.sourceBackupPath,
 				error: `Échec de l’enregistrement de sécurité : ${(e as Error).message}. Le remplacement est annulé et le conflit reste ouvert pour préserver vos données.`,
 			};
 		}
 
-		// Recovery files confirmed on disk. Now proceed with applying the chosen resolution:
-		if (choice === 'keep-mine') {
-			lease.hasConflict = false;
-			const saveRes = await this.saveSource(sourcePath, localDraft);
-			if (!saveRes.success) {
+		// The source must not have changed while the recovery files were written
+		if (file.stat.mtime !== diskMtime) {
+			try {
+				const currentBody = extractSourceContent(await this.app.vault.read(file)).body;
+				if (currentBody !== diskBody) {
+					return conflictChanged(currentBody);
+				}
+				diskMtime = file.stat.mtime;
+			} catch (e) {
 				return {
 					success: false,
 					resolvedBody: localDraft,
 					discardedBody: diskBody,
 					localBackupPath,
 					sourceBackupPath,
-					error: saveRes.error,
+					error: `Lecture de la source impossible : ${(e as Error).message}`,
 				};
 			}
+		}
+
+		// Recovery files confirmed on disk. Now proceed with applying the chosen resolution:
+		if (choice === 'keep-mine') {
+			const outcome: { newerBody: string | null; wrote: boolean } = {
+				newerBody: null,
+				wrote: false,
+			};
+			this.internalSavePaths.add(norm);
+			try {
+				await this.app.vault.process(file, (current) => {
+					const parsed = extractSourceContent(current);
+					if (parsed.body !== diskBody) {
+						outcome.newerBody = parsed.body;
+						return current;
+					}
+					const next = formatSourceContent(parsed.syncId, localDraft);
+					outcome.wrote = next !== current;
+					return next;
+				});
+			} catch (e) {
+				this.internalSavePaths.delete(norm);
+				return {
+					success: false,
+					resolvedBody: localDraft,
+					discardedBody: diskBody,
+					localBackupPath,
+					sourceBackupPath,
+					error: (e as Error).message || 'Échec de l’enregistrement de la source',
+				};
+			}
+			if (!outcome.wrote) {
+				this.internalSavePaths.delete(norm);
+			}
+			if (outcome.newerBody !== null) {
+				return conflictChanged(outcome.newerBody);
+			}
+
+			lease.hasConflict = false;
+			lease.externalDiskContent = undefined;
+			lease.preservation = undefined;
+			lease.lastSavedContent = localDraft;
+			lease.lastSeenMtime = file.stat.mtime;
 			return {
 				success: true,
 				resolvedBody: localDraft,
@@ -415,8 +669,10 @@ export class SyncedBlockManager {
 			};
 		} else {
 			lease.hasConflict = false;
+			lease.externalDiskContent = undefined;
+			lease.preservation = undefined;
 			lease.lastSavedContent = diskBody;
-			lease.lastSeenMtime = file.stat.mtime;
+			lease.lastSeenMtime = diskMtime;
 			this.notify(norm, 'modify');
 			return {
 				success: true,
