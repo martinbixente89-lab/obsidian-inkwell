@@ -17,3 +17,12 @@ export class TFile extends TAbstractFile {
 export class TFolder extends TAbstractFile {}
 
 export class App {}
+
+/** Records every notice shown, for assertions. */
+export class Notice {
+	static shown: unknown[] = [];
+	constructor(message: unknown) {
+		Notice.shown.push(message);
+	}
+	hide(): void {}
+}

@@ -1,5 +1,6 @@
 import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
 import type InkwellPlugin from './main';
+import { renderSlashMenuSetting } from './slash-menu/slash-settings';
 import {
 	DEFAULT_SETTINGS,
 	InkwellSettings,
@@ -134,20 +135,8 @@ export class InkwellSettingTab extends PluginSettingTab {
 					});
 			});
 
-		// 3d. Slash Menu Toggle
-		new Setting(containerEl)
-			.setName('Menu d’insertion slash (/)')
-			.setDesc(
-				'Ouvre un menu flottant d’insertion rapide lorsque vous tapez / au début d’une ligne vide. Pour éviter des menus simultanés, vous pouvez désactiver le plugin interne « Commandes / » d’Obsidian.',
-			)
-			.addToggle((toggle) => {
-				toggle
-					.setValue(this.plugin.settings.slashMenuEnabled)
-					.onChange(async (value) => {
-						this.plugin.settings.slashMenuEnabled = value;
-						await this.plugin.saveSettings();
-					});
-			});
+		// 3d. Slash Menu Toggle (exclusive with Obsidian's native slash commands)
+		renderSlashMenuSetting(containerEl, this.plugin, () => this.display());
 
 		// 3c. Page Width Mode (Standard vs Full Width)
 		new Setting(containerEl)

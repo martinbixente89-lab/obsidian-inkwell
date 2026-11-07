@@ -12,6 +12,7 @@ import type InkwellPlugin from '../main';
 import { filterSlashItems, getSlashTriggerInfo } from './matcher';
 import { createSlashMenuItems } from './items';
 import { SlashMenuView } from './slash-menu-view';
+import { checkSlashMenuOpening } from './slash-gate';
 import type { SlashMenuItem, SlashTriggerInfo } from './types';
 
 class SlashPlaceholderWidget extends WidgetType {
@@ -226,6 +227,16 @@ export function createSlashMenuExtension(plugin: InkwellPlugin): Extension {
 
 			if (!trigger) {
 				if (activeView === view) closeMenu('no-trigger');
+				this.decorations = Decoration.none;
+				return;
+			}
+
+			// Every opening attempt (typed "/", paste, gutter "+", any text change) goes
+			// through the exclusivity check with Obsidian's native slash commands.
+			// Opening an already-open menu for the same trigger is not a new attempt.
+			const alreadyOpen = activeView === view && !!activeMenuView?.isOpen();
+			if (!alreadyOpen && !checkSlashMenuOpening(plugin, 'typing')) {
+				if (activeView === view) closeMenu('native-exclusivity');
 				this.decorations = Decoration.none;
 				return;
 			}

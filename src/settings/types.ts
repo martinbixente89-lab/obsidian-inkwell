@@ -20,6 +20,14 @@ export interface InkwellSettings {
 	experimentalColorBoldSupport: boolean;
 	slashMenuEnabled: boolean;
 
+	// Exclusivity with Obsidian's native "Slash commands" core plugin
+	/** The user explicitly chose Inkwell's slash menu (native menu off, or disabled with confirmation). */
+	inkwellSlashChosen: boolean;
+	/** Native state unreadable: the user confirmed having disabled the native menu manually. */
+	nativeSlashManuallyConfirmed: boolean;
+	/** The one-time "both menus active" notice has been shown. */
+	slashConflictNoticeShown: boolean;
+
 	// V1.1.0 — Palettes personnalisées
 	palettes: CustomPalette[];
 	recentColors: string[];
@@ -57,6 +65,9 @@ export const DEFAULT_SETTINGS: InkwellSettings = {
 	experimentalTagNavigation: true,
 	experimentalColorBoldSupport: true,
 	slashMenuEnabled: true,
+	inkwellSlashChosen: false,
+	nativeSlashManuallyConfirmed: false,
+	slashConflictNoticeShown: false,
 
 	palettes: createDefaultPalettes(),
 	recentColors: [],
@@ -105,6 +116,21 @@ export function sanitizeSettings(loaded: unknown): InkwellSettings {
 		typeof data.slashMenuEnabled === 'boolean'
 			? data.slashMenuEnabled
 			: DEFAULT_SETTINGS.slashMenuEnabled;
+
+	const readBool = (value: unknown, fallback: boolean): boolean =>
+		typeof value === 'boolean' ? value : fallback;
+	const inkwellSlashChosen = readBool(
+		data.inkwellSlashChosen,
+		DEFAULT_SETTINGS.inkwellSlashChosen,
+	);
+	const nativeSlashManuallyConfirmed = readBool(
+		data.nativeSlashManuallyConfirmed,
+		DEFAULT_SETTINGS.nativeSlashManuallyConfirmed,
+	);
+	const slashConflictNoticeShown = readBool(
+		data.slashConflictNoticeShown,
+		DEFAULT_SETTINGS.slashConflictNoticeShown,
+	);
 
 	// Palettes sanitization
 	let palettes: CustomPalette[] = DEFAULT_SETTINGS.palettes;
@@ -257,6 +283,9 @@ export function sanitizeSettings(loaded: unknown): InkwellSettings {
 		experimentalTagNavigation: rawNav,
 		experimentalColorBoldSupport: rawBold,
 		slashMenuEnabled: rawSlash,
+		inkwellSlashChosen,
+		nativeSlashManuallyConfirmed,
+		slashConflictNoticeShown,
 		palettes,
 		recentColors,
 		recentHighlights,

@@ -5,6 +5,7 @@ import type InkwellPlugin from '../main';
 import { getColumnController } from '../columns/column-widget';
 import { canAddColumnToGroup } from '../columns/parser';
 import { registerPlusButtonSlashInsertion } from '../slash-menu/extension';
+import { checkSlashMenuOpening } from '../slash-menu/slash-gate';
 import { minimalDiff } from '../utils/text-diff';
 import { getCalloutControllerAtOffset } from './callout-widget';
 import {
@@ -726,6 +727,9 @@ class BlockGutterViewPlugin {
 
 		const edView = target.editorView;
 		const block = target.block;
+
+		// Check before inserting anything: no useless "/" when Inkwell's menu cannot open.
+		if (!checkSlashMenuOpening(this.plugin, 'plus-button')) return;
 
 		if (insertBefore) {
 			const insertPos = Math.max(0, Math.min(block.fromOffset, edView.state.doc.length));
