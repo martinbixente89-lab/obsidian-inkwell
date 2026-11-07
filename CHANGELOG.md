@@ -4,6 +4,33 @@ Toutes les modifications notables apportées au plugin **Inkwell** sont consign�
 
 Le format s’appuie sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/) et respecte les règles de [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.6.1] - 2026-11-07
+
+### Version 1.6.1 — Correctif : Fiabilité des blocs synchronisés
+
+Cette version corrective sécurise l’édition et la résolution des conflits des blocs synchronisés. Elle ne modifie ni le format des notes ni celui des notes sources dans `_synced/`.
+
+### Corrections
+- **Transfert du bail d’édition sans perte des dernières frappes** :
+  - Lorsqu’une seconde instance d’un même bloc prenait la main juste après une saisie (avant la sauvegarde différée), elle s’ouvrait sur un contenu antérieur : selon le moment, les dernières frappes de la première instance pouvaient être écrasées ou un faux conflit apparaissait.
+  - La seconde instance repart désormais de la source telle qu’elle est sur le disque après l’enregistrement des frappes de la première.
+- **Récupération du brouillon lors d’une sortie d’édition en conflit** :
+  - Quitter l’édition (Échap, clic sur le badge) ou laisser une autre instance prendre la main pendant un conflit non résolu abandonnait le brouillon local sans sauvegarde.
+  - Le brouillon local et la version source sont maintenant enregistrés dans `_synced/conflits/` avant la fermeture de l’éditeur, sans modifier la source.
+  - Si cette sauvegarde échoue, le bloc reste en édition avec son brouillon, le conflit reste ouvert, la prise de main par une autre instance est refusée et l’échec est signalé.
+  - Les tentatives répétées réutilisent les sauvegardes déjà écrites pour un contenu identique au lieu de créer des doublons.
+- **Résolution « Conserver ma version »** :
+  - Ce choix échouait après toute modification externe de la source, c’est-à-dire dans les conflits réels, tout en créant des sauvegardes à chaque essai.
+  - Le brouillon est désormais appliqué uniquement après l’enregistrement confirmé des deux versions, et seulement si la source n’a pas de nouveau changé pendant la résolution. Dans ce cas, rien n’est remplacé, le brouillon est conservé et le conflit reste ouvert avec la version la plus récente.
+  - « Charger la version source » bénéficie de la même vérification.
+
+### Limites connues
+- La protection contre une modification survenant pendant l’écriture finale couvre les écritures passant par Obsidian ; un programme externe écrivant directement sur le disque au même instant n’est pas couvert.
+- La fermeture d’une note ou la désactivation du plugin pendant une édition ne déclenchent pas encore de nettoyage dédié des blocs synchronisés.
+- Un arrêt brutal de l’application peut toujours faire perdre les toutes dernières frappes non enregistrées ou un brouillon en conflit non encore sauvegardé.
+
+---
+
 ## [1.5.1] - 2026-10-28
 
 ### Version 1.5.1 — Correctif : Rétablissement des sources TypeScript de gestion des polices
