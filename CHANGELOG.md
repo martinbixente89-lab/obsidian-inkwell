@@ -4,6 +4,21 @@ Toutes les modifications notables apportées au plugin **Inkwell** sont consign�
 
 Le format s’appuie sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/) et respecte les règles de [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [1.6.3] - 2026-11-07
+
+### Version 1.6.3 — Correctif : Barre d’outils flottante et fenêtres multiples
+
+Cette version corrective rétablit l’affichage de la barre d’outils flottante lorsqu’Inkwell a été chargé pendant qu’une autre fenêtre d’Obsidian était active.
+
+### Corrections
+- **Barre d’outils introuvable après un rechargement d’Inkwell** :
+  - La barre d’outils et ses écouteurs de sélection étaient liés à la fenêtre active au moment du chargement d’Inkwell. Si une fenêtre détachée était active à cet instant (par exemple lors d’une mise à jour ou d’un rechargement du plugin), la barre n’apparaissait plus dans la fenêtre principale, même après la fermeture de cette fenêtre.
+  - La barre d’outils est désormais créée dans la fenêtre principale et ses écouteurs sont attachés à chaque fenêtre d’Obsidian (fenêtre principale, fenêtres détachées ouvertes ou ouvertes ensuite).
+  - Avant de s’afficher, la barre d’outils rejoint la fenêtre de l’éditeur qui contient la sélection.
+- Ce défaut existait depuis la version 1.5.0 ; il n’a pas été introduit par la version 1.6.2.
+
+---
+
 ## [1.6.2] - 2026-11-07
 
 ### Version 1.6.2 — Correctif : Menu slash d’Inkwell et « Commandes slash » d’Obsidian mutuellement exclusifs
