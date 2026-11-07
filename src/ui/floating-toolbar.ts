@@ -86,6 +86,15 @@ export class FloatingToolbarManager {
 		this.toolbarEl.setAttribute('role', 'toolbar');
 		this.toolbarEl.setAttribute('aria-label', 'Barre d’outils Inkwell');
 
+		// Decorative material layers (visible only with the "glass-figma" style).
+		// Order matters: Fill + Shadow below, Glass Effect above; both ignore pointer events.
+		for (const layerClass of ['inkwell-glass-fill-layer', 'inkwell-glass-effect-layer']) {
+			const layer = doc.createElement('div');
+			layer.className = `inkwell-glass-layer ${layerClass}`;
+			layer.setAttribute('aria-hidden', 'true');
+			this.toolbarEl.appendChild(layer);
+		}
+
 		// Prevent mousedown from collapsing DOM selection or blurring editor
 		this.toolbarEl.addEventListener('mousedown', (e) => {
 			e.preventDefault();
@@ -342,6 +351,10 @@ export class FloatingToolbarManager {
 		const reduceTransparency = this.plugin.settings.toolbarReduceTransparency;
 
 		this.toolbarEl.classList.toggle('inkwell-theme-liquid-glass', isLiquidGlass);
+		this.toolbarEl.classList.toggle(
+			'inkwell-theme-glass-figma',
+			this.plugin.settings.toolbarStyle === 'glass-figma',
+		);
 		this.toolbarEl.classList.toggle('inkwell-reduce-transparency', reduceTransparency);
 
 		if (this.popoverEl) {

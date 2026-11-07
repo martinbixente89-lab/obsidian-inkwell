@@ -304,6 +304,100 @@
 	}
 }
 
+/* ==========================================================================
+   Figma glass material ("glass-figma") — horizontal toolbar only (first trial)
+   Source: "Composition figma Liquid glass material pour tool bar" (dark reference).
+   Structure: [buttons/icons] > Glass Effect layer > Fill + Shadow layer.
+   Both decorative layers are pointer-events: none and never touch icons.
+   ========================================================================== */
+
+.inkwell-glass-layer {
+	display: none;
+}
+
+.inkwell-floating-toolbar.inkwell-theme-glass-figma {
+	/* Figma corner radius 23 (CSS clamps it to half the height on this geometry) */
+	--inkwell-glass-radius: 23px;
+	/* Directly transposed Figma values */
+	--inkwell-glass-fill-base: #101010; /* Fill 2: 101010 @ 100% */
+	--inkwell-glass-fill-tint: rgba(255, 255, 255, 0.04); /* Fill 1: FFFFFF @ 4% */
+	/* Approximation (Figma "Frost 6" has no documented CSS equivalent) */
+	--inkwell-glass-frost-blur: 6px;
+
+	background: transparent;
+	border: none;
+	box-shadow: none;
+	backdrop-filter: none; /* must stay none: a parent backdrop-filter would hide the page from the glass layer */
+	-webkit-backdrop-filter: none;
+	border-radius: var(--inkwell-glass-radius);
+	padding: 3px 5px;
+	gap: 2px;
+	color: #f2f2f2;
+}
+
+.inkwell-floating-toolbar.inkwell-theme-glass-figma .inkwell-glass-layer {
+	display: block;
+	position: absolute;
+	inset: 0;
+	border-radius: var(--inkwell-glass-radius);
+	pointer-events: none;
+}
+
+/* Lower layer: Fill + Shadow */
+.inkwell-floating-toolbar.inkwell-theme-glass-figma .inkwell-glass-fill-layer {
+	background:
+		linear-gradient(var(--inkwell-glass-fill-tint), var(--inkwell-glass-fill-tint)),
+		var(--inkwell-glass-fill-base);
+	box-shadow:
+		1.25px 0 0 -0.75px #d0d0d0,
+		-1.25px 0 0 -0.75px #d0d0d0,
+		0 0 0 0.5px #cccccc,
+		0 8px 15px 0 rgba(0, 0, 0, 0.02);
+}
+
+/* Upper layer: Glass Effect (3 inner shadows + glass backdrop) */
+.inkwell-floating-toolbar.inkwell-theme-glass-figma .inkwell-glass-effect-layer {
+	background: transparent;
+	backdrop-filter: blur(var(--inkwell-glass-frost-blur));
+	-webkit-backdrop-filter: blur(var(--inkwell-glass-frost-blur));
+	box-shadow:
+		inset 0 40px 10px -40px #282828,
+		inset 0 -40px 10px -40px #282828,
+		inset 0 40px 30px -40px #e6e6e6;
+}
+
+.inkwell-floating-toolbar.inkwell-theme-glass-figma.inkwell-reduce-transparency .inkwell-glass-effect-layer {
+	backdrop-filter: none;
+	-webkit-backdrop-filter: none;
+}
+
+/* Foreground: buttons, icons, separators stay above both layers and unfiltered */
+.inkwell-floating-toolbar.inkwell-theme-glass-figma > .inkwell-toolbar-group,
+.inkwell-floating-toolbar.inkwell-theme-glass-figma > .inkwell-toolbar-separator {
+	position: relative;
+	z-index: 1;
+}
+
+.inkwell-floating-toolbar.inkwell-theme-glass-figma .inkwell-toolbar-btn {
+	color: #f2f2f2;
+	/* Obsidian's default button style (higher specificity) would paint grey tiles over the material */
+	background: transparent;
+	box-shadow: none;
+}
+
+.inkwell-floating-toolbar.inkwell-theme-glass-figma .inkwell-toolbar-btn:hover:not(:disabled) {
+	background-color: rgba(255, 255, 255, 0.14);
+}
+
+.inkwell-floating-toolbar.inkwell-theme-glass-figma .inkwell-toolbar-btn.is-active {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.inkwell-floating-toolbar.inkwell-theme-glass-figma .inkwell-toolbar-separator {
+	background-color: rgba(255, 255, 255, 0.22);
+}
+
 /* Floating Toolbar Cleanup Popover */
 .inkwell-cleanup-popover {
 	display: flex;

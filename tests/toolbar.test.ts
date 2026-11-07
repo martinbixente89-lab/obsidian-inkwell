@@ -205,6 +205,11 @@ test('settings: toolbarEnabled setting lifecycle (V0.4.0)', async (t) => {
 		assert.equal(sanitized.toolbarReduceTransparency, true);
 	});
 
+	await t.test('accepts the glass-figma toolbar style and keeps classic as default', () => {
+		assert.equal(sanitizeSettings({ toolbarStyle: 'glass-figma' }).toolbarStyle, 'glass-figma');
+		assert.equal(sanitizeSettings({}).toolbarStyle, 'classic');
+	});
+
 	await t.test('falls back to safe defaults for invalid toolbar style values', () => {
 		const sanitized = sanitizeSettings({
 			toolbarLayout: 'unknown-layout',

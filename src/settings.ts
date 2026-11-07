@@ -108,10 +108,11 @@ export class InkwellSettingTab extends PluginSettingTab {
 				dropdown
 					.addOption('classic', 'Classique (opaque natif)')
 					.addOption('liquid-glass', 'Liquid Glass (capsule translucide avec flou)')
+					.addOption('glass-figma', 'Verre Figma (essai, barre horizontale uniquement)')
 					.setValue(this.plugin.settings.toolbarStyle)
 					.onChange(async (value: string) => {
 						this.plugin.settings.toolbarStyle =
-							value === 'liquid-glass' ? 'liquid-glass' : 'classic';
+							value === 'liquid-glass' || value === 'glass-figma' ? value : 'classic';
 						await this.plugin.saveSettings();
 						this.plugin.onToolbarSettingChanged();
 					});

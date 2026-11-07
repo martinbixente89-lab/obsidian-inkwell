@@ -43,7 +43,7 @@ export interface InkwellSettings {
 
 	// V1.4.0 — Toolbar presentation & style
 	toolbarLayout: 'horizontal' | 'radial';
-	toolbarStyle: 'classic' | 'liquid-glass';
+	toolbarStyle: 'classic' | 'liquid-glass' | 'glass-figma';
 	toolbarReduceTransparency: boolean;
 }
 
@@ -238,8 +238,10 @@ export function sanitizeSettings(loaded: unknown): InkwellSettings {
 
 	const toolbarLayout: 'horizontal' | 'radial' =
 		data.toolbarLayout === 'radial' ? 'radial' : DEFAULT_SETTINGS.toolbarLayout;
-	const toolbarStyle: 'classic' | 'liquid-glass' =
-		data.toolbarStyle === 'liquid-glass' ? 'liquid-glass' : DEFAULT_SETTINGS.toolbarStyle;
+	const toolbarStyle: 'classic' | 'liquid-glass' | 'glass-figma' =
+		data.toolbarStyle === 'liquid-glass' || data.toolbarStyle === 'glass-figma'
+			? data.toolbarStyle
+			: DEFAULT_SETTINGS.toolbarStyle;
 	const toolbarReduceTransparency =
 		typeof data.toolbarReduceTransparency === 'boolean'
 			? data.toolbarReduceTransparency
