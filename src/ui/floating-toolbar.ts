@@ -7,6 +7,7 @@ import {
 } from 'obsidian';
 import type InkwellPlugin from '../main';
 import { PerDocumentAttachment, relocateToDocument } from './toolbar-windows';
+import { applyToolbarAppearance } from './toolbar-appearance';
 import { clearInkwellFormatting } from '../commands/clear-styles';
 import {
 	CapturedEditorSelection,
@@ -361,17 +362,33 @@ export class FloatingToolbarManager {
 		const isLiquidGlass = this.plugin.settings.toolbarStyle === 'liquid-glass';
 		const reduceTransparency = this.plugin.settings.toolbarReduceTransparency;
 
-		this.toolbarEl.classList.toggle('inkwell-theme-liquid-glass', isLiquidGlass);
-		this.toolbarEl.classList.toggle(
-			'inkwell-theme-glass-figma',
-			this.plugin.settings.toolbarStyle === 'glass-figma',
-		);
-		this.toolbarEl.classList.toggle('inkwell-reduce-transparency', reduceTransparency);
+		// Same rules as the settings preview (style classes + custom corner radius).
+		applyToolbarAppearance(this.toolbarEl, this.plugin.settings);
 
 		if (this.popoverEl) {
 			this.popoverEl.classList.toggle('inkwell-theme-liquid-glass', isLiquidGlass);
 			this.popoverEl.classList.toggle('inkwell-reduce-transparency', reduceTransparency);
 		}
+	}
+
+	/**
+	 * Returns a static copy of the toolbar markup for the settings preview, created in `doc`.
+	 * importNode copies no event listeners: the copy cannot run any toolbar action.
+	 * Runtime state (position, visibility, selection states, compact mode) is stripped.
+	 */
+	public createPreviewTemplate(doc: Document): HTMLElement | null {
+		if (!this.toolbarEl) return null;
+		const clone = doc.importNode(this.toolbarEl, true);
+		clone.removeAttribute('style');
+		clone.classList.remove('is-hidden', 'is-compact');
+		clone.setAttribute('aria-label', 'Aperçu de la barre d’outils');
+		clone.querySelectorAll('button').forEach((btn) => {
+			btn.type = 'button';
+			btn.disabled = false;
+			btn.classList.remove('is-active', 'is-mixed', 'is-disabled');
+			if (btn.hasAttribute('aria-pressed')) btn.setAttribute('aria-pressed', 'false');
+		});
+		return clone;
 	}
 
 	public hide(): void {

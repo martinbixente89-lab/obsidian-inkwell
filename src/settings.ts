@@ -1,6 +1,24 @@
-import { App, Notice, PluginSettingTab, Setting } from 'obsidian';
+import { App, debounce, Notice, PluginSettingTab, Setting } from 'obsidian';
 import type InkwellPlugin from './main';
 import { renderSlashMenuSetting } from './slash-menu/slash-settings';
+import {
+	getVisibleSettingsTabs,
+	renderSettingsTabBar,
+	resolveSettingsTab,
+	SettingsTabId,
+	TABS_ROW_ATTRIBUTES,
+	TABS_ROW_CLASSES,
+} from './settings/settings-tabs';
+import { ToolbarPreview } from './settings/toolbar-preview';
+import { captureFocus, FOCUS_ATTR, restoreFocus, stampFocusIds } from './settings/focus-restore';
+import { palettesForSelector, renderPaletteSelector } from './settings/palette-selector';
+import {
+	styleRadiusHint,
+	styleSupportsReduceTransparency,
+	TOOLBAR_RADIUS_MAX,
+	TOOLBAR_RADIUS_MIN,
+	TOOLBAR_STYLE_OPTIONS,
+} from './ui/toolbar-appearance';
 import {
 	DEFAULT_SETTINGS,
 	InkwellSettings,
@@ -51,6 +69,9 @@ export type { InkwellSettings };
 export class InkwellSettingTab extends PluginSettingTab {
 	plugin: InkwellPlugin;
 	private selectedPaletteId: string | null = null;
+	/** Session-only UI state (not stored in data.json). */
+	private activeTab: SettingsTabId = 'general';
+	private previewState: { selectedIndex: number | null } = { selectedIndex: null };
 
 	constructor(app: App, plugin: InkwellPlugin) {
 		super(app, plugin);
@@ -59,84 +80,73 @@ export class InkwellSettingTab extends PluginSettingTab {
 
 	display(): void {
 		const { containerEl } = this;
+		const focusSnapshot = captureFocus(containerEl);
 		containerEl.empty();
+		containerEl.addClass('inkwell-settings');
 
-		new Setting(containerEl).setName('Paramètres généraux').setHeading();
+		const visible = getVisibleSettingsTabs(this.plugin.settings);
+		this.activeTab = resolveSettingsTab(this.activeTab, this.plugin.settings);
+		// Ordinary setting row (see TABS_ROW_CLASSES) so Obsidian's keyboard navigation
+		// reaches the tabs in both directions: sidebar → row → active tab → settings.
+		const tabsRow = containerEl.createDiv({
+			cls: [...TABS_ROW_CLASSES],
+			attr: { ...TABS_ROW_ATTRIBUTES },
+		});
+		renderSettingsTabBar(tabsRow, visible, this.activeTab, (id, focus) => {
+			this.activeTab = id;
+			this.display();
+			if (focus) {
+				containerEl.querySelector<HTMLElement>(`.inkwell-settings-tab[data-tab="${id}"]`)?.focus();
+			}
+		});
 
-		// 1. Default Text Color
-		this.buildDefaultTextColorSetting(containerEl);
+		const panel = containerEl.createDiv({
+			cls: 'inkwell-settings-panel',
+			attr: { role: 'tabpanel' },
+		});
+		if (this.activeTab === 'toolbar') {
+			this.renderToolbarTab(panel);
+		} else if (this.activeTab === 'slash') {
+			renderSlashMenuSetting(panel, this.plugin, () => this.display());
+		} else {
+			this.renderGeneralTab(panel);
+		}
 
-		// 2. Default Highlight Color
-		this.buildDefaultHighlightColorSetting(containerEl);
+		stampFocusIds(containerEl);
+		restoreFocus(containerEl, focusSnapshot, () =>
+			containerEl.querySelector<HTMLElement>('.inkwell-settings-tab.is-active'),
+		);
+	}
 
-		// 3. Selection Toolbar Toggle
+	/* ---------------------------------------------------------------------- */
+	/* Paramètres généraux                                                     */
+	/* ---------------------------------------------------------------------- */
+
+	private renderGeneralTab(containerEl: HTMLElement): void {
+		new Setting(containerEl).setName('Fonctionnalités').setHeading();
+
 		new Setting(containerEl)
 			.setName('Barre d’outils à la sélection')
 			.setDesc(
-				'Affiche une barre d’outils contextuelle lors de la sélection de texte en aperçu en direct.',
+				'Affiche une barre d’outils contextuelle lors de la sélection de texte en aperçu en direct. Sa personnalisation est conservée lorsqu’elle est désactivée.',
 			)
 			.addToggle((toggle) => {
+				toggle.toggleEl.setAttribute(FOCUS_ATTR, 'toolbar-enabled');
 				toggle
 					.setValue(this.plugin.settings.toolbarEnabled)
 					.onChange(async (value) => {
 						this.plugin.settings.toolbarEnabled = value;
 						await this.plugin.saveSettings();
 						this.plugin.onToolbarSettingChanged();
+						this.display();
 					});
 			});
 
-		// 3a. Toolbar Layout (Barre horizontale vs Anneau radial)
-		new Setting(containerEl)
-			.setName('Disposition de la barre d’outils')
-			.setDesc(
-				'Choix de la géométrie de la barre lors d’une sélection de texte. L’anneau radial est en cours de préparation (Étape 2).',
-			)
-			.addDropdown((dropdown) => {
-				dropdown
-					.addOption('horizontal', 'Barre horizontale (active)')
-					.addOption('radial', 'Anneau radial (bientôt disponible — Étape 2)')
-					.setValue('horizontal')
-					.setDisabled(true);
-			});
+		new Setting(containerEl).setName('Couleurs par défaut').setHeading();
+		this.buildDefaultTextColorSetting(containerEl);
+		this.buildDefaultHighlightColorSetting(containerEl);
 
-		// 3b. Toolbar Style (Classique vs Liquid Glass)
-		new Setting(containerEl)
-			.setName('Apparence de la barre d’outils')
-			.setDesc(
-				'Style visuel de la barre flottante : sobre opaque ou capsule translucide Liquid Glass.',
-			)
-			.addDropdown((dropdown) => {
-				dropdown
-					.addOption('classic', 'Classique (opaque natif)')
-					.addOption('liquid-glass', 'Liquid Glass (capsule translucide avec flou)')
-					.addOption('glass-figma', 'Verre Figma (essai, barre horizontale uniquement)')
-					.setValue(this.plugin.settings.toolbarStyle)
-					.onChange(async (value: string) => {
-						this.plugin.settings.toolbarStyle =
-							value === 'liquid-glass' || value === 'glass-figma' ? value : 'classic';
-						await this.plugin.saveSettings();
-						this.plugin.onToolbarSettingChanged();
-					});
-			});
-
-		// 3c. Toolbar Transparency Toggle
-		new Setting(containerEl)
-			.setName('Réduire la transparence de la barre d’outils')
-			.setDesc(
-				'Désactive les effets de transparence et de flou translucide au profit d’un fond opaque contrasté, améliorant la lisibilité sur fond complexe ou si la transparence fatigue.',
-			)
-			.addToggle((toggle) => {
-				toggle
-					.setValue(this.plugin.settings.toolbarReduceTransparency)
-					.onChange(async (value) => {
-						this.plugin.settings.toolbarReduceTransparency = value;
-						await this.plugin.saveSettings();
-						this.plugin.onToolbarSettingChanged();
-					});
-			});
-
-		// 3d. Slash Menu Toggle (exclusive with Obsidian's native slash commands)
-		renderSlashMenuSetting(containerEl, this.plugin, () => this.display());
+		new Setting(containerEl).setName('Édition').setHeading();
 
 		// 3c. Page Width Mode (Standard vs Full Width)
 		new Setting(containerEl)
@@ -189,37 +199,214 @@ export class InkwellSettingTab extends PluginSettingTab {
 					});
 			});
 
-		// ==========================================
-		// PALETTE MANAGEMENT SECTION
-		// ==========================================
+		// Resources used by commands stay reachable when the toolbar is disabled.
+		if (!this.plugin.settings.toolbarEnabled) {
+			new Setting(containerEl)
+				.setName('Couleurs et polices')
+				.setDesc(
+					'Palettes et polices utilisées par les commandes d’Inkwell. Elles apparaissent dans l’onglet Toolbar lorsque la barre d’outils est activée.',
+				)
+				.setHeading();
+			this.renderColorsAndFonts(containerEl);
+		}
+
+		new Setting(containerEl).setName('Rétablissement complet').setHeading();
+
 		new Setting(containerEl)
-			.setName('Gestion des palettes de couleurs')
+			.setName('Rétablir tous les réglages par défaut')
 			.setDesc(
-				'Créez, personnalisez et organisez vos palettes de texte et de surlignage. Vos couleurs sont immédiatement disponibles dans la barre d’outils et les commandes.',
+				'Réinitialise l’ensemble des réglages Inkwell (couleurs par défaut, options de barre et de navigation). Ne modifie aucune note existante.',
 			)
-			.setHeading();
+			.addButton((button) => {
+				button
+					.setButtonText('Tout réinitialiser')
+					.setWarning()
+					.onClick(() => {
+						new ConfirmActionModal(
+							this.app,
+							'Rétablir tous les réglages par défaut ?',
+							'Tous les réglages d’Inkwell seront réinitialisés à leur configuration d’origine. Vos notes ne seront pas modifiées.',
+							'Tout réinitialiser',
+							() => {
+								void (async () => {
+									this.plugin.settings = { ...DEFAULT_SETTINGS };
+									await this.plugin.saveSettings();
+									this.plugin.onTagNavigationSettingChanged();
+									this.plugin.onToolbarSettingChanged();
+									this.display();
+									new Notice('Tous les paramètres ont été réinitialisés.');
+								})();
+							},
+						).open();
+					});
+			});
+	}
 
-		this.buildPaletteManagerSection(containerEl);
+	/* ---------------------------------------------------------------------- */
+	/* Toolbar                                                                 */
+	/* ---------------------------------------------------------------------- */
 
-		// ==========================================
-		// IMPORT / EXPORT & RESET PALETTES SECTION
-		// ==========================================
+	private renderToolbarTab(containerEl: HTMLElement): void {
+		new Setting(containerEl).setName('Personnalisation de la toolbar').setHeading();
+		this.renderToolbarPersonalization(containerEl);
+		this.renderColorsAndFonts(containerEl);
+	}
+
+	private renderToolbarPersonalization(containerEl: HTMLElement): void {
+		const preview = new ToolbarPreview(containerEl, this.plugin, this.previewState);
+		const applyToolbar = () => {
+			this.plugin.onToolbarSettingChanged();
+			preview.refresh();
+		};
+
 		new Setting(containerEl)
-			.setName('Importation, exportation et réinitialisation')
-			.setHeading();
-
-		new Setting(containerEl)
-			.setName('Exporter les palettes')
-			.setDesc('Télécharge vos palettes au format JSON documenté et validé (schéma v1).')
-			.addButton((btn) => {
-				btn.setButtonText('Exporter en JSON').onClick(() => {
-					this.exportPalettes();
+			.setName('Forme de la toolbar')
+			.setDesc('Choisissez l’apparence de votre toolbar.')
+			.addDropdown((dropdown) => {
+				for (const option of TOOLBAR_STYLE_OPTIONS) {
+					dropdown.addOption(option.value, option.label);
+				}
+				dropdown.setValue(this.plugin.settings.toolbarStyle).onChange(async (value: string) => {
+					const known = TOOLBAR_STYLE_OPTIONS.find((o) => o.value === value);
+					this.plugin.settings.toolbarStyle = known ? known.value : 'classic';
+					await this.plugin.saveSettings();
+					applyToolbar();
+					renderSubOptions();
 				});
 			});
 
+		const subEl = containerEl.createDiv({ cls: 'inkwell-toolbar-suboptions' });
+		const renderSubOptions = () => {
+			subEl.empty();
+			this.renderCornerRadiusSetting(subEl, applyToolbar);
+			if (styleSupportsReduceTransparency(this.plugin.settings.toolbarStyle)) {
+				new Setting(subEl)
+					.setName('Réduire la transparence')
+					.setDesc(
+						'Désactive les effets de transparence et de flou translucide au profit d’un fond opaque contrasté, améliorant la lisibilité sur fond complexe ou si la transparence fatigue.',
+					)
+					.addToggle((toggle) => {
+						toggle
+							.setValue(this.plugin.settings.toolbarReduceTransparency)
+							.onChange(async (value) => {
+								this.plugin.settings.toolbarReduceTransparency = value;
+								await this.plugin.saveSettings();
+								applyToolbar();
+							});
+					});
+			}
+		};
+		renderSubOptions();
+	}
+
+	private renderCornerRadiusSetting(containerEl: HTMLElement, applyToolbar: () => void): void {
+		const settings = this.plugin.settings;
+		const describe = () =>
+			settings.toolbarCornerRadius === null
+				? 'Arrondi du style'
+				: `${settings.toolbarCornerRadius} px`;
+
+		const setting = new Setting(containerEl)
+			.setName('Arrondi des coins')
+			.setDesc(
+				`Arrondi du conteneur de la toolbar, de ${TOOLBAR_RADIUS_MIN} à ${TOOLBAR_RADIUS_MAX} px. Au-delà de la moitié de la hauteur de la barre, la forme est déjà une capsule.`,
+			);
+		const valueEl = setting.controlEl.createSpan({
+			cls: 'inkwell-radius-value',
+			attr: { 'aria-live': 'polite' },
+		});
+		valueEl.setText(describe());
+
+		let resetButton: { setDisabled: (disabled: boolean) => unknown } | null = null;
+		const persist = debounce(
+			async () => {
+				await this.plugin.saveSettings();
+			},
+			250,
+			true,
+		);
+		const applyValue = (value: number | null) => {
+			settings.toolbarCornerRadius = value;
+			valueEl.setText(describe());
+			resetButton?.setDisabled(value === null);
+			applyToolbar();
+		};
+
+		setting.addSlider((slider) => {
+			// Only shows the current value; nothing is stored until the user moves the slider.
+			slider
+				.setLimits(TOOLBAR_RADIUS_MIN, TOOLBAR_RADIUS_MAX, 1)
+				.setValue(settings.toolbarCornerRadius ?? styleRadiusHint(settings.toolbarStyle))
+				.setDynamicTooltip();
+			slider.sliderEl.setAttribute('aria-label', 'Arrondi des coins de la toolbar, en pixels');
+			if (settings.toolbarCornerRadius === null) {
+				slider.sliderEl.setAttribute('aria-valuetext', 'Arrondi du style');
+			}
+			// Live preview while dragging (works on every supported Obsidian version).
+			slider.sliderEl.addEventListener('input', () => {
+				const value = Number(slider.sliderEl.value);
+				slider.sliderEl.removeAttribute('aria-valuetext');
+				applyValue(value);
+				persist();
+			});
+			slider.onChange((value) => {
+				applyValue(value);
+				persist();
+			});
+		});
+		valueEl.parentElement?.prepend(valueEl);
+
+		setting.addExtraButton((btn) => {
+			resetButton = btn;
+			btn
+				.setIcon('rotate-ccw')
+				.setTooltip('Rétablir l’arrondi du style')
+				.setDisabled(settings.toolbarCornerRadius === null)
+				.onClick(() => {
+					applyValue(null);
+					void this.plugin.saveSettings();
+					this.display();
+				});
+		});
+	}
+
+	/* ---------------------------------------------------------------------- */
+	/* Palettes and fonts (Toolbar tab, or General when the toolbar is off)    */
+	/* ---------------------------------------------------------------------- */
+
+	private renderColorsAndFonts(containerEl: HTMLElement): void {
+		new Setting(containerEl).setName('Palette de couleurs').setHeading();
+
+		const presets = new Setting(containerEl)
+			.setName('Palettes prédéfinies')
+			.setDesc('Choisissez une palette de couleurs prédéfinie.');
+		// Inside the setting row so Obsidian's keyboard navigation reaches the listboxes.
+		presets.settingEl.addClass('inkwell-palette-presets');
+		const selectors = presets.settingEl.createDiv({ cls: 'inkwell-palette-selectors' });
+		const choose = async (palette: CustomPalette) => {
+			if (palette.type === 'text') {
+				this.plugin.settings.activeTextPaletteId = palette.id;
+			} else {
+				this.plugin.settings.activeHighlightPaletteId = palette.id;
+			}
+			await this.plugin.saveSettings();
+		};
+		renderPaletteSelector(selectors, {
+			label: 'Palette de texte',
+			palettes: palettesForSelector(this.plugin.settings.palettes, 'text'),
+			activeId: this.plugin.settings.activeTextPaletteId,
+			onSelect: (p) => void choose(p),
+		});
+		renderPaletteSelector(selectors, {
+			label: 'Palette de surlignage',
+			palettes: palettesForSelector(this.plugin.settings.palettes, 'highlight'),
+			activeId: this.plugin.settings.activeHighlightPaletteId,
+			onSelect: (p) => void choose(p),
+		});
+
 		new Setting(containerEl)
-			.setName('Importer des palettes')
-			.setDesc('Charge des palettes depuis un fichier JSON avec validation de structure.')
+			.setName('Importation de palettes')
+			.setDesc('Importez vos propres palettes.')
 			.addButton((btn) => {
 				btn.setButtonText('Importer depuis JSON').onClick(() => {
 					new ImportPalettesModal(
@@ -239,6 +426,49 @@ export class InkwellSettingTab extends PluginSettingTab {
 					).open();
 				});
 			});
+
+		new Setting(containerEl)
+			.setName('Exporter les palettes')
+			.setDesc('Télécharge vos palettes au format JSON documenté et validé (schéma v1).')
+			.addButton((btn) => {
+				btn.setButtonText('Exporter en JSON').onClick(() => {
+					this.exportPalettes();
+				});
+			});
+
+		// Personal palettes (created or imported)
+		const personal = this.plugin.settings.palettes.filter((p) => !p.isBuiltIn);
+		const box = containerEl.createDiv({ cls: 'inkwell-settings-box' });
+		box.createDiv({ cls: 'inkwell-settings-box-title', text: 'Palettes personnelles' });
+		if (personal.length === 0) {
+			box.createDiv({
+				cls: 'inkwell-settings-box-empty',
+				text: 'Aucune palette personnelle. Créez-en une ci-dessous ou importez un fichier JSON.',
+			});
+		} else {
+			for (const palette of personal) {
+				const row = box.createDiv({ cls: 'inkwell-personal-palette' });
+				row.createSpan({ cls: 'inkwell-personal-palette-name', text: palette.name });
+				row.createSpan({
+					cls: 'inkwell-palette-option-meta',
+					text: palette.type === 'text' ? 'Texte' : 'Surlignage',
+				});
+				const sw = row.createDiv({ cls: 'inkwell-palette-option-swatches', attr: { 'aria-hidden': 'true' } });
+				for (const color of palette.colors.slice(0, 12)) {
+					sw.createSpan({ cls: 'inkwell-palette-option-swatch' }).setCssProps({
+						'--inkwell-swatch-color': color.value,
+					});
+				}
+			}
+		}
+
+		new Setting(containerEl)
+			.setName('Modifier une palette')
+			.setDesc(
+				'Créez, renommez ou supprimez des palettes et modifiez leurs couleurs (palettes intégrées comprises). Vos couleurs sont immédiatement disponibles dans la barre d’outils et les commandes.',
+			)
+			.setHeading();
+		this.buildPaletteManagerSection(containerEl);
 
 		new Setting(containerEl)
 			.setName('Réinitialiser les palettes')
@@ -281,51 +511,8 @@ export class InkwellSettingTab extends PluginSettingTab {
 					});
 			});
 
-		// ==========================================
-		// POLICES PERSONNELLES (V1.2.0)
-		// ==========================================
-		new Setting(containerEl)
-			.setName('Polices personnelles')
-			.setDesc(
-				'Importez vos fichiers de police (.ttf, .otf, .woff, .woff2) pour les appliquer au texte sélectionné depuis la barre flottante. Les fichiers sont stockés localement dans le coffre.',
-			)
-			.setHeading();
-
+		new Setting(containerEl).setName('Polices d’écriture').setHeading();
 		this.buildCustomFontsSection(containerEl);
-
-		// ==========================================
-		// RESET ALL SETTINGS SECTION
-		// ==========================================
-		new Setting(containerEl).setName('Rétablissement complet').setHeading();
-
-		new Setting(containerEl)
-			.setName('Rétablir tous les réglages par défaut')
-			.setDesc(
-				'Réinitialise l’ensemble des réglages Inkwell (couleurs par défaut, options de barre et de navigation). Ne modifie aucune note existante.',
-			)
-			.addButton((button) => {
-				button
-					.setButtonText('Tout réinitialiser')
-					.setWarning()
-					.onClick(() => {
-						new ConfirmActionModal(
-							this.app,
-							'Rétablir tous les réglages par défaut ?',
-							'Tous les réglages d’Inkwell seront réinitialisés à leur configuration d’origine. Vos notes ne seront pas modifiées.',
-							'Tout réinitialiser',
-							() => {
-								void (async () => {
-									this.plugin.settings = { ...DEFAULT_SETTINGS };
-									await this.plugin.saveSettings();
-									this.plugin.onTagNavigationSettingChanged();
-									this.plugin.onToolbarSettingChanged();
-									this.display();
-									new Notice('Tous les paramètres ont été réinitialisés.');
-								})();
-							},
-						).open();
-					});
-			});
 	}
 
 	private buildDefaultTextColorSetting(containerEl: HTMLElement): void {
@@ -629,6 +816,7 @@ export class InkwellSettingTab extends PluginSettingTab {
 				cls: `inkwell-btn-icon ${isFav ? 'is-favorite' : ''}`,
 				text: isFav ? '★' : '☆',
 			});
+			favBtn.setAttribute(FOCUS_ATTR, `color:${activePalette.id}:${c.id}:favorite`);
 			favBtn.setAttribute('title', isFav ? 'Retirer des favoris' : 'Ajouter aux favoris');
 			favBtn.addEventListener('click', () => {
 				void (async () => {
@@ -652,6 +840,7 @@ export class InkwellSettingTab extends PluginSettingTab {
 				cls: 'inkwell-btn-icon',
 				text: '↑',
 			});
+			upBtn.setAttribute(FOCUS_ATTR, `color:${activePalette.id}:${c.id}:up`);
 			upBtn.setAttribute('title', 'Déplacer vers le haut');
 			if (index === 0) upBtn.setAttribute('disabled', 'true');
 			upBtn.addEventListener('click', () => {
@@ -668,6 +857,7 @@ export class InkwellSettingTab extends PluginSettingTab {
 				cls: 'inkwell-btn-icon',
 				text: '↓',
 			});
+			downBtn.setAttribute(FOCUS_ATTR, `color:${activePalette.id}:${c.id}:down`);
 			downBtn.setAttribute('title', 'Déplacer vers le bas');
 			if (index === activePalette.colors.length - 1) downBtn.setAttribute('disabled', 'true');
 			downBtn.addEventListener('click', () => {
@@ -684,6 +874,7 @@ export class InkwellSettingTab extends PluginSettingTab {
 				cls: 'inkwell-btn-icon',
 				text: '✎',
 			});
+			editBtn.setAttribute(FOCUS_ATTR, `color:${activePalette.id}:${c.id}:edit`);
 			editBtn.setAttribute('title', 'Modifier cette couleur');
 			editBtn.addEventListener('click', () => {
 				new EditColorModal(
@@ -706,6 +897,7 @@ export class InkwellSettingTab extends PluginSettingTab {
 				cls: 'inkwell-btn-icon is-danger',
 				text: '×',
 			});
+			delBtn.setAttribute(FOCUS_ATTR, `color:${activePalette.id}:${c.id}:delete`);
 			delBtn.setAttribute('title', 'Supprimer cette couleur');
 			delBtn.addEventListener('click', () => {
 				void (async () => {
@@ -744,10 +936,11 @@ export class InkwellSettingTab extends PluginSettingTab {
 	}
 
 	private buildCustomFontsSection(containerEl: HTMLElement): void {
-		const importSetting = new Setting(containerEl)
-			.setName('Importer des polices')
+		const importZone = containerEl.createDiv({ cls: 'inkwell-font-import-zone' });
+		const importSetting = new Setting(importZone)
+			.setName('Importation des polices')
 			.setDesc(
-				'Sélectionnez un ou plusieurs fichiers de police (.ttf, .otf, .woff ou .woff2). Le fichier est validé et copié dans le dossier de polices du plugin.',
+				'Importez des polices pour styliser vos notes. Formats acceptés : .ttf, .otf, .woff ou .woff2 ; chaque fichier est validé puis copié dans le dossier de polices du plugin.',
 			);
 
 		const fileInput = activeWindow.document.createElement('input');
@@ -858,15 +1051,17 @@ export class InkwellSettingTab extends PluginSettingTab {
 				});
 		});
 
-		// Font items list
+		// Font items list, boxed under the import zone
+		const fontsBox = containerEl.createDiv({ cls: 'inkwell-settings-box' });
+		fontsBox.createDiv({ cls: 'inkwell-settings-box-title', text: 'Polices importées' });
 		const fonts = this.plugin.settings.customFonts;
 		if (fonts.length === 0) {
-			const emptyBox = containerEl.createDiv({ cls: 'inkwell-fonts-empty' });
+			const emptyBox = fontsBox.createDiv({ cls: 'inkwell-fonts-empty' });
 			emptyBox.createEl('p', {
 				text: 'Aucune police personnelle importée. Utilisez le bouton ci-dessus pour ajouter vos fichiers de police.',
 			});
 		} else {
-			const listContainer = containerEl.createDiv({ cls: 'inkwell-fonts-list' });
+			const listContainer = fontsBox.createDiv({ cls: 'inkwell-fonts-list' });
 
 			fonts.forEach((font, index) => {
 				const card = listContainer.createDiv({ cls: 'inkwell-font-card' });
@@ -907,6 +1102,7 @@ export class InkwellSettingTab extends PluginSettingTab {
 					cls: 'inkwell-font-action-btn',
 					text: 'Renommer',
 				});
+				renameBtn.setAttribute(FOCUS_ATTR, `font:${font.id}:rename`);
 				renameBtn.addEventListener('click', () => {
 					new RenameFontModal(
 						this.app,
@@ -927,6 +1123,7 @@ export class InkwellSettingTab extends PluginSettingTab {
 					cls: 'inkwell-font-action-btn is-danger',
 					text: 'Retirer',
 				});
+				deleteBtn.setAttribute(FOCUS_ATTR, `font:${font.id}:remove`);
 				deleteBtn.addEventListener('click', () => {
 					new ConfirmDeleteFontModal(this.app, font, () => {
 						void (async () => {

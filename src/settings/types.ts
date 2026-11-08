@@ -11,6 +11,7 @@ import {
 	normalizeColorValue,
 } from '../palette/palette-manager';
 import { CustomFontItem } from '../fonts/types';
+import { sanitizeToolbarCornerRadius } from '../ui/toolbar-appearance';
 
 export interface InkwellSettings {
 	defaultColor: string;
@@ -53,6 +54,8 @@ export interface InkwellSettings {
 	toolbarLayout: 'horizontal' | 'radial';
 	toolbarStyle: 'classic' | 'liquid-glass' | 'glass-figma';
 	toolbarReduceTransparency: boolean;
+	// V2.0.0 — Custom corner radius of the toolbar container (0–23 px); null keeps the style's radius
+	toolbarCornerRadius: number | null;
 }
 
 export const DEFAULT_SETTINGS: InkwellSettings = {
@@ -62,6 +65,7 @@ export const DEFAULT_SETTINGS: InkwellSettings = {
 	toolbarLayout: 'horizontal',
 	toolbarStyle: 'classic',
 	toolbarReduceTransparency: false,
+	toolbarCornerRadius: null,
 	experimentalTagNavigation: true,
 	experimentalColorBoldSupport: true,
 	slashMenuEnabled: true,
@@ -280,6 +284,7 @@ export function sanitizeSettings(loaded: unknown): InkwellSettings {
 		toolbarLayout,
 		toolbarStyle,
 		toolbarReduceTransparency,
+		toolbarCornerRadius: sanitizeToolbarCornerRadius(data.toolbarCornerRadius),
 		experimentalTagNavigation: rawNav,
 		experimentalColorBoldSupport: rawBold,
 		slashMenuEnabled: rawSlash,
