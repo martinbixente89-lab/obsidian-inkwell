@@ -1,6 +1,6 @@
 {
 	"name": "inkwell",
-	"version": "1.6.3",
+	"version": "2.0.0",
 	"description": "Inkwell: color, highlight, size and style font families for selected text in Obsidian",
 	"main": "main.js",
 	"type": "module",

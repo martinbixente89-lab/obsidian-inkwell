@@ -4,6 +4,44 @@ Toutes les modifications notables apportées au plugin **Inkwell** sont consign�
 
 Le format s’appuie sur [Keep a Changelog](https://keepachangelog.com/fr/1.0.0/) et respecte les règles de [Semantic Versioning](https://semver.org/lang/fr/).
 
+## [2.0.0] - 2026-11-08
+
+### Version 2.0.0 — Nouveaux réglages : sections, aperçu de la barre d’outils et arrondi
+
+Cette version majeure réorganise entièrement les réglages d’Inkwell. Les réglages, palettes et polices existants sont conservés sans migration : un seul réglage est ajouté, avec une valeur par défaut neutre.
+
+### Nouveautés
+- **Réglages en trois onglets** : « Paramètres généraux », « Toolbar » et « Menu / ».
+  - Navigation entre onglets avec les flèches, Début et Fin ; la barre d’onglets est atteignable avec Tab et Maj+Tab depuis la barre latérale des réglages.
+  - L’onglet « Toolbar » n’apparaît que lorsque la barre d’outils est activée. Sa désactivation ne supprime aucune préférence de personnalisation.
+  - Lorsque la barre d’outils est désactivée, les palettes et les polices restent accessibles dans « Paramètres généraux », sous « Couleurs et polices ».
+  - Le menu slash reste indépendant de la barre d’outils.
+- **Personnalisation de la barre d’outils**
+  - « Forme de la toolbar » : choix entre Normal, Liquid Glass et Verre Figma.
+  - **Arrondi des coins** réglable de 0 à 23 px pour le conteneur de la barre d’outils, avec affichage « Arrondi du style » tant qu’aucune valeur n’est choisie et action « Rétablir l’arrondi du style ». L’arrondi des menus déroulants de la barre n’est pas modifié.
+  - « Réduire la transparence » n’est affiché que pour les styles translucides ; la valeur enregistrée est conservée pour tous les styles.
+  - **Aperçu interactif** reprenant la vraie barre d’outils : il reflète immédiatement le style, la transparence et l’arrondi, montre le survol et l’outil sélectionné, et ne modifie aucune note.
+- **Palettes de couleurs**
+  - « Palettes prédéfinies » : deux sélecteurs, pour le texte et pour le surlignage, affichant le nom et les pastilles de chaque palette. Ils utilisent la palette active déjà enregistrée.
+  - « Importation de palettes » (format JSON existant) et encadré « Palettes personnelles » regroupant les palettes créées ou importées. L’édition des palettes, l’exportation et la réinitialisation sont conservées.
+- **Polices d’écriture** : zone « Importation des polices » et encadré « Polices importées », avec les actions existantes (renommer, retirer).
+- **Focus clavier conservé** lorsque la page des réglages se reconstruit : par exemple, le focus reste sur l’interrupteur de la barre d’outils après son activation ou sa désactivation.
+
+### Changements
+- Le style « Classique » s’appelle désormais « Normal » ; la valeur enregistrée est inchangée.
+- Le menu « Disposition de la barre d’outils », dont l’anneau radial n’était pas disponible, a été retiré des réglages.
+
+### Compatibilité
+- Aucune migration : toutes les clés de réglage existantes sont conservées.
+- Nouveau réglage `toolbarCornerRadius`, nul par défaut (arrondi propre à chaque style) ; les valeurs invalides sont ignorées sans conversion.
+
+### Limites connues
+- Dans Obsidian 1.15, les boutons des cartes de polices (Renommer, Retirer) et des lignes de couleurs de l’éditeur de palettes ne sont pas atteignables avec la touche Tab ; ils restent utilisables à la souris. La page des réglages n’est donc pas encore entièrement navigable au clavier.
+- Dans une fenêtre de réglages étroite, un léger défilement horizontal vide peut apparaître ; il provient d’éléments de mesure internes d’Obsidian et ne masque aucun contrôle.
+- Dans une fenêtre étroite, l’aperçu de la barre d’outils défile horizontalement et n’applique pas le mode compact de la vraie barre.
+
+---
+
 ## [1.6.3] - 2026-11-07
 
 ### Version 1.6.3 — Correctif : Barre d’outils flottante et fenêtres multiples
